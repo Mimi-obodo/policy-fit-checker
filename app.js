@@ -862,20 +862,6 @@ function initPreviews() {
 /* --------------------------------------------------------------------------
    Reveal on scroll
    -------------------------------------------------------------------------- */
-function initReveal() {
-  var els = document.querySelectorAll(".reveal");
-  if (!("IntersectionObserver" in window)) {
-    els.forEach(function (e) { e.classList.add("in"); });
-    return;
-  }
-  var io = new IntersectionObserver(function (entries) {
-    entries.forEach(function (en) {
-      if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); }
-    });
-  }, { threshold: 0.12 });
-  els.forEach(function (e) { io.observe(e); });
-}
-
 /* --------------------------------------------------------------------------
    Persona panels: click any agent node to meet it
    -------------------------------------------------------------------------- */
@@ -1454,11 +1440,17 @@ function initSound() {
   draw(false);
 }
 
+function smoothScrollTo(el) {
+  if (!el) return;
+  var y = el.getBoundingClientRect().top + window.pageYOffset - 78;
+  window.scrollTo(0, Math.max(0, y));
+}
+
 function initScrollTop() {
   var b = $("#scrollTop");
   if (!b) return;
   b.addEventListener("click", function () {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo(0, 0);
   });
 }
 
@@ -1591,30 +1583,10 @@ function initLoader() {
   requestAnimationFrame(step);
 }
 
-function initParallax() {
-  var layers = document.querySelectorAll("[data-parallax]");
-  if (!layers.length) return;
-  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  var ticking = false;
-  function update() {
-    var y = window.scrollY;
-    layers.forEach(function (el) {
-      var s = parseFloat(el.getAttribute("data-parallax")) || 0;
-      el.style.transform = "translate3d(0, " + (y * s) + "px, 0)";
-    });
-    ticking = false;
-  }
-  window.addEventListener("scroll", function () {
-    if (!ticking) { ticking = true; requestAnimationFrame(update); }
-  }, { passive: true });
-  update();
-}
-
 /* --------------------------------------------------------------------------
    Boot (guarded: each module only starts where its page markup exists)
    -------------------------------------------------------------------------- */
 if (document.querySelector(".flip-icon")) initFlipIcons();
-initReveal();
 if (document.querySelector("[data-persona]")) initPersonas();
 if (document.querySelector(".pv[data-preview]")) initPreviews();
 initWaves($("#heroWaves"));
@@ -1630,6 +1602,5 @@ initCursor();
 initSound();
 initScrollTop();
 initLoader();
-initParallax();
 initTheme();
 initChatbot();
