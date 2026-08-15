@@ -91,12 +91,6 @@ a:hover { text-decoration: underline; }
   border-radius: 4px;
 }
 
-/* Lenis smooth-scroll requirements (see initLenis in app.js) */
-html.lenis, html.lenis body { height: auto; }
-.lenis.lenis-smooth { scroll-behavior: auto !important; }
-.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
-.lenis.lenis-stopped { overflow: hidden; }
-.lenis.lenis-smooth iframe { pointer-events: none; }
 .skip-link {
   position: absolute; left: -999px; top: 0; z-index: 100;
   background: var(--accent); color: var(--ink);
@@ -474,7 +468,7 @@ button.node { cursor: pointer; text-align: center; }
    Reduced motion
    ========================================================================== */
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
+html { scroll-behavior: smooth; }
   * { animation-duration: 0.001s !important; animation-iteration-count: 1 !important; transition-duration: 0.001s !important; }
   .pipeline-track { display: none; }
   .pipeline.running .node { opacity: 1; }

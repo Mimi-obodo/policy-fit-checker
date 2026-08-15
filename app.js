@@ -1088,7 +1088,7 @@ async function botAnswer(q) {
   if (has(["sasha", "why", "explain", "plain", "understand"])) return whoTag("Sasha") + " I write the reason under each policy in plain language, grounded in the actual numbers and the actual exclusions. If a policy excludes something you told us matters, you will read it in my line before you pay a premium.";
   if (has(["callum", "manager", "team", "orchestrat"])) return whoTag("Callum") + " I review every handoff: Nadia researched it, Milo scored it, Priya built it, Sasha explained it. My job is the final judgement, and the honest empty state when nothing fits.";
   if (has(["hello", "hi", "hey", "who are", "what can"])) return whoTag("Callum") + " Hello. I am Callum, the manager of the team. Ask me which policy fits a student, what data we use, or how we treat pre-existing conditions, or name an agent and I will route you.";
-  if (has(["data", "source", "where", "how do you know"])) return whoTag("Priya") + " All policy data is pulled live from a published Google Sheet catalog at the moment of use. This page holds no hardcoded premiums or names. Static text around it, like the education notes, is clearly our own writing, not catalog data.";
+  if (has(["data", "source", "where", "how do you know"])) return whoTag("Priya") + " I match you against the live policy catalog at the moment you ask \u2014 every premium and name on a card comes straight from there.";
   return whoTag("Callum") + " I heard you, though the question does not yet point at anything specific. I am best at policy fits, the data we use, or one of the five of us by name. Try \u201cwhich policy fits a student in Ireland under 40 a month\u201d, or ask Sasha to explain an exclusion.";
 }
 
@@ -1458,8 +1458,7 @@ function initScrollTop() {
   var b = $("#scrollTop");
   if (!b) return;
   b.addEventListener("click", function () {
-    if (window.__lenis) window.__lenis.scrollTo(0, { duration: 1.1 });
-    else window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 }
 
@@ -1564,7 +1563,7 @@ function initProviders() {
 }
 
 /* --------------------------------------------------------------------------
-   Loading sequence (short, cinematic) + Lenis smooth scroll + parallax
+   Loading sequence (short, cinematic) + parallax
    -------------------------------------------------------------------------- */
 function initLoader() {
   var loader = $("#loader");
@@ -1590,51 +1589,6 @@ function initLoader() {
     else finish();
   }
   requestAnimationFrame(step);
-}
-
-function initLenis() {
-  if (!window.matchMedia || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  if (window.Lenis) { startLenis(); return; }
-  var urls = [
-    "https://unpkg.com/lenis@1.1.14/dist/lenis.min.js",
-    "https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"
-  ];
-  var i = 0;
-  function next() {
-    if (i >= urls.length) return;
-    var s = document.createElement("script");
-    s.src = urls[i++];
-    s.onload = startLenis;
-    s.onerror = next;
-    document.head.appendChild(s);
-  }
-  next();
-  function startLenis() {
-    try {
-      if (!window.Lenis) return;
-      window.__lenis = new window.Lenis({
-        duration: 1.15,
-        smoothWheel: true,
-        easing: function (t) { return 1 - Math.pow(1 - t, 4); }
-      });
-      document.querySelectorAll("#chatLog, #cbLog, .persona-overlay, .intake, .results").forEach(function (el) {
-        el.setAttribute("data-lenis-prevent", "");
-      });
-      function raf(t) { if (window.__lenis) window.__lenis.raf(t); requestAnimationFrame(raf); }
-      requestAnimationFrame(raf);
-    } catch (e) {
-      window.__lenis = null;
-    }
-  }
-}
-
-function smoothScrollTo(el) {
-  if (!el) return;
-  if (window.__lenis) {
-    window.__lenis.scrollTo(el, { offset: -72, duration: 1.1 });
-  } else {
-    try { el.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) { el.scrollIntoView(true); }
-  }
 }
 
 function initParallax() {
@@ -1676,7 +1630,6 @@ initCursor();
 initSound();
 initScrollTop();
 initLoader();
-initLenis();
 initParallax();
 initTheme();
 initChatbot();
