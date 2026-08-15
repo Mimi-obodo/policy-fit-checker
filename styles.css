@@ -584,7 +584,6 @@ button.node:focus-visible { outline: 2px solid var(--accent); outline-offset: 3p
   font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.14em;
   text-transform: uppercase; color: rgba(239, 237, 230, 0.72);
 }
-.quote-enter { margin-top: 48px; }
 
 /* Scroll-to-discover */
 .scroll-to-cta {
@@ -1142,6 +1141,43 @@ body { animation: pageIn 0.6s var(--ease); }
 }
 .menu-terms a:hover { color: #FFFFFF; }
 .menu-cta-link { color: #16150F !important; background: #EFEDE6; border-radius: 999px; padding: 6px 14px; font-weight: 600; }
+
+.search-btn { margin-left: 4px; }
+.search-btn svg { display: block; }
+
+/* Search overlay */
+.search-overlay {
+  position: fixed; inset: 0; z-index: 92;
+  background: rgba(8, 8, 7, 0.72);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 13vh 6vw 6vw;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s var(--ease);
+}
+.search-overlay.open { opacity: 1; pointer-events: auto; }
+.search-box {
+  width: 100%; max-width: 680px;
+  background: var(--surface); border: var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-card); padding: 20px;
+}
+.search-head { display: flex; align-items: center; gap: 12px; }
+.search-icon { color: var(--slate); flex: none; }
+.search-head input {
+  flex: 1; min-width: 0; background: transparent; border: none; outline: none;
+  color: var(--parchment); font-family: var(--font-body); font-size: 18px; padding: 6px 0;
+}
+.search-head input::placeholder { color: var(--accent-3); }
+.search-head input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.search-close {
+  flex: none; width: 34px; height: 34px; border-radius: 50%;
+  background: transparent; color: var(--slate);
+  border: 1px solid var(--border-strong); cursor: pointer; font-size: 18px; line-height: 1;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.search-close:hover { color: var(--parchment); border-color: var(--accent); background: var(--surface-2); }
+.search-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.search-hint { margin: 14px 0 0; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--slate); }
 
 .cursor { display: none; }
 @media (pointer: fine) {

@@ -1090,6 +1090,11 @@ function initChat() {
   document.querySelectorAll(".chip").forEach(function (c) {
     c.addEventListener("click", function () { chatSend(c.getAttribute("data-q")); });
   });
+  var m = location.search.match(/[?&]q=([^&]+)/);
+  if (m) {
+    var q = decodeURIComponent(m[1].replace(/\+/g, " "));
+    if (q) chatSend(q);
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -1205,6 +1210,66 @@ function initChatbot() {
     if (!q) return;
     input.value = "";
     send(q);
+  });
+
+  window.pfcChat = { open: open, send: send, close: close };
+}
+
+/* --------------------------------------------------------------------------
+   Search: icon in the header opens an overlay; results come from the agents
+   -------------------------------------------------------------------------- */
+function initSearch() {
+  var btn = $("#searchBtn"), overlay = $("#searchOverlay"), input = $("#searchInput"), close = $("#searchClose");
+  if (!btn || !overlay || !input || !close) return;
+
+  var SUGGESTIONS = [
+    "A student policy in Ireland under 40 a month",
+    "Family cover for two adults and kids",
+    "Pre-existing conditions covered",
+    "Self-employed income protection",
+    "How is my premium calculated?"
+  ];
+  var box = $("#searchSuggestions");
+  SUGGESTIONS.forEach(function (s) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip";
+    b.textContent = s;
+    b.addEventListener("click", function () { run(s); });
+    box.appendChild(b);
+  });
+
+  function setOpen(o) {
+    overlay.classList.toggle("open", o);
+    overlay.setAttribute("aria-hidden", String(!o));
+    btn.setAttribute("aria-expanded", String(o));
+    btn.setAttribute("aria-label", o ? "Close search" : "Search");
+    if (o) input.focus(); else input.blur();
+  }
+
+  btn.addEventListener("click", function () { setOpen(!overlay.classList.contains("open")); });
+  close.addEventListener("click", function () { setOpen(false); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && overlay.classList.contains("open")) setOpen(false);
+    if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) { e.preventDefault(); setOpen(true); }
+  });
+
+  function run(q) {
+    setOpen(false);
+    if (window.pfcChat && window.pfcChat.open) {
+      window.pfcChat.open();
+      window.pfcChat.send(q);
+    } else {
+      location.href = "chat.html?q=" + encodeURIComponent(q);
+    }
+  }
+
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      var q = input.value.trim();
+      if (q) run(q);
+    }
   });
 }
 
@@ -1604,3 +1669,4 @@ initScrollTop();
 initLoader();
 initTheme();
 initChatbot();
+initSearch();

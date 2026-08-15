@@ -72,6 +72,9 @@
         '<svg class="theme-icon theme-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg>' +
         '<svg class="theme-icon theme-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>' +
       "</button>" +
+      '<button type="button" class="theme-btn search-btn" id="searchBtn" aria-expanded="false" aria-controls="searchOverlay" aria-label="Search">' +
+        '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>' +
+      "</button>" +
       '<button type="button" class="menu-cta" id="menuCta" aria-expanded="false" aria-controls="siteMenu" aria-label="Open menu">' +
         '<span class="menu-cta-text">Menu</span>' +
         '<span class="dots-w" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>' +
@@ -154,11 +157,24 @@
       '<p class="cb-note"><a href="chat.html">Open the full chat page</a></p>' +
     "</div>";
 
+  var searchOverlay =
+    '<div class="search-overlay" id="searchOverlay" aria-hidden="true">' +
+      '<div class="search-box" role="search">' +
+        '<div class="search-head">' +
+          '<svg class="search-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>' +
+          '<input id="searchInput" type="search" autocomplete="off" placeholder="Search what you want, e.g. family cover in Ireland under 60 a month" aria-label="Search">' +
+          '<button type="button" class="search-close" id="searchClose" aria-label="Close search">&times;</button>' +
+        "</div>" +
+        '<div class="search-suggestions" id="searchSuggestions" aria-label="Suggested searches"></div>' +
+        '<p class="search-hint">Press Enter \u2014 the five agents will search the live catalog for you.</p>' +
+      "</div>" +
+    "</div>";
+
   function inject() {
     var b = document.body;
     if (!b) return;
     b.insertAdjacentHTML("afterbegin", loader + cursor + header + buttons);
-    b.insertAdjacentHTML("beforeend", footer + chatbot);
+    b.insertAdjacentHTML("beforeend", footer + chatbot + searchOverlay);
     var main = document.querySelector("main");
     if (main) main.setAttribute("id", "main");
   }
