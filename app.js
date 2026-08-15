@@ -504,7 +504,13 @@ function renderStep() {
       span.textContent = opt.l;
       lab.appendChild(inp);
       lab.appendChild(span);
-      lab.addEventListener("click", function () { ctl.querySelectorAll("label").forEach(function (l) { l.classList.remove("sel"); }); lab.classList.add("sel"); });
+      lab.addEventListener("click", function () {
+        ctl.querySelectorAll("label").forEach(function (l) { l.classList.remove("sel"); });
+        lab.classList.add("sel");
+        next.disabled = false;
+        answers[s.key] = inp.value;
+        if (stepIdx === STEPS.length - 1) setTimeout(finishAndRun, 380);
+      });
       lab.addEventListener("keydown", function (e) { if (e.key === "Enter") { next.focus(); } });
       ctl.appendChild(lab);
     });
@@ -527,6 +533,20 @@ function renderStep() {
   }
 }
 
+function finishAndRun() {
+  var profile = {
+    stage: answers.stage,
+    age: answers.age,
+    dependants: answers.dependants,
+    condition: answers.condition,
+    budget: answers.budget,
+    region: answers.region
+  };
+  var p = $("#pipeline");
+  p.scrollIntoView({ behavior: "smooth", block: "center" });
+  runPipeline(profile);
+}
+
 $("#stepNext").addEventListener("click", function () {
   var s = STEPS[stepIdx];
   if (s.type === "options") {
@@ -537,18 +557,7 @@ $("#stepNext").addEventListener("click", function () {
     answers[s.key] = parseInt($("#stepControl input[type='range']").value, 10);
   }
   if (stepIdx < STEPS.length - 1) { setStep(stepIdx + 1); return; }
-  var profile = {
-    stage: answers.stage,
-    age: answers.age,
-    dependants: answers.dependants,
-    condition: answers.condition,
-    budget: answers.budget,
-    region: answers.region
-  };
-  $("#intake").scrollIntoView({ behavior: "smooth", block: "start" });
-  var p = $("#pipeline");
-  p.scrollIntoView({ behavior: "smooth", block: "center" });
-  runPipeline(profile);
+  finishAndRun();
 });
 
 $("#stepBack").addEventListener("click", function () { if (stepIdx > 0) setStep(stepIdx - 1); });
