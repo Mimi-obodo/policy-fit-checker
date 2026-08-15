@@ -16,6 +16,7 @@
 
   var PAGES = [
     { href: "index.html", label: "Home" },
+    { href: "home.html", label: "Explore" },
     { href: "about.html", label: "About" },
     { href: "education.html", label: "Education" },
     { href: "cover.html", label: "Cover List" },
