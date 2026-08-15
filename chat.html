@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat with the team | Policy Fit Checker</title>
+<meta name="description" content="Chat with the five Policy Fit Checker agents: Nadia, Milo, Priya, Sasha and Callum. Policy questions go through the same live pipeline against the Google Drive catalog.">
+<meta name="theme-color" content="#0B0B0A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main>
+
+  <!-- ================= CHAT WITH THE AGENTS ================= -->
+  <section class="chat-section wrap-section" id="chat" aria-labelledby="chat-heading">
+    <p class="page-kicker">( 06 · chat )</p>
+    <h2 class="section-title reveal" id="chat-heading">Talk to the team</h2>
+    <p class="section-lede reveal">Address one agent by name, or ask the team. Questions about which policy fits go through the same live matching pipeline you used on the match page; the team queries the Google Drive catalog at the moment you ask, every time.</p>
+
+    <div class="chat-pipeline reveal" id="chatPipeline" role="group" aria-label="The five agents, connected to the live catalog">
+      <button type="button" class="node" data-node="nadia" data-persona="nadia" aria-label="Meet Nadia, the Researcher">
+        <span class="node-idx">1</span>
+        <span class="node-meta"><b>Nadia</b><i>Researcher</i><span class="node-status">Idle</span></span>
+      </button>
+      <button type="button" class="node" data-node="milo" data-persona="milo" aria-label="Meet Milo, the Designer">
+        <span class="node-idx">2</span>
+        <span class="node-meta"><b>Milo</b><i>Designer</i><span class="node-status">Idle</span></span>
+      </button>
+      <button type="button" class="node" data-node="priya" data-persona="priya" aria-label="Meet Priya, the Maker">
+        <span class="node-idx">3</span>
+        <span class="node-meta"><b>Priya</b><i>Maker</i><span class="node-status">Idle</span></span>
+      </button>
+      <button type="button" class="node" data-node="sasha" data-persona="sasha" aria-label="Meet Sasha, the Communicator">
+        <span class="node-idx">4</span>
+        <span class="node-meta"><b>Sasha</b><i>Communicator</i><span class="node-status">Idle</span></span>
+      </button>
+      <button type="button" class="node" data-node="callum" data-persona="callum" aria-label="Meet Callum, the Manager">
+        <span class="node-idx">5</span>
+        <span class="node-meta"><b>Callum</b><i>Manager</i><span class="node-status">Idle</span></span>
+      </button>
+    </div>
+
+    <div class="chat-live" id="chatLive" aria-live="polite">The team is idle. Ask something and the agents will query the live catalog.</div>
+
+    <div class="chat-shell reveal">
+      <div class="chat-log" id="chatLog" aria-live="polite" tabindex="0">
+        <p class="chat-line bot"><span class="chat-who">Callum:</span> Ask us anything. Try "which policy fits a student in Ireland", or ask me, Sasha, Priya, Milo or Nadia by name.</p>
+      </div>
+      <div class="chat-chips" aria-label="Suggested questions">
+        <button type="button" class="chip" data-q="Which policy fits a student in Ireland under 30 a month?">Fit a student</button>
+        <button type="button" class="chip" data-q="What data do you use to match me?">What data do you use?</button>
+        <button type="button" class="chip" data-q="How do you handle pre-existing conditions?">Pre-existing conditions</button>
+        <button type="button" class="chip" data-q="Which agent are you, and what do you do?">Meet the team</button>
+      </div>
+      <form class="chat-form" id="chatForm" novalidate>
+        <label class="sr-only" for="chatInput">Ask the agents a question</label>
+        <input id="chatInput" type="text" placeholder="Ask the team…" autocomplete="off">
+        <button type="submit" class="btn btn-primary" id="chatSend">Send</button>
+      </form>
+      <p class="chat-mode">The team is connected to the live catalog: every policy question re-queries the Google Drive sheet at the moment you send it. No messages leave this page.</p>
+    </div>
+
+    <div class="page-cta reveal">
+      <a class="btn btn-primary" href="match.html">Run a full match</a>
+    </div>
+  </section>
+
+</main>
+
+<script src="shell.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

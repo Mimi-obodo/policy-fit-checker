@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insurance Policy Providers | Policy Fit Checker</title>
+<meta name="description" content="The live insurance provider catalog rendered like a travel booking site: price, cover, excess and rating for every policy, pulled from Google Drive at load time.">
+<meta name="theme-color" content="#0B0B0A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main>
+
+  <!-- ================= PROVIDERS: booking.com-style catalogue ================= -->
+  <section class="providers wrap-section" id="providers" aria-labelledby="providers-heading">
+    <p class="page-kicker">( 04 · providers )</p>
+    <h2 class="section-title reveal" id="providers-heading">Insurance Policy Providers</h2>
+    <p class="section-lede reveal">The catalogue, rendered the way a travel booking site renders a city's rooms: every real provider and policy in the shared catalog, with the price, the cover, the excess and the rating all on show before you pick anything. Like <span class="pv" data-preview="booking">booking.com shows you what is actually available</span>, this list is pulled <span class="pv" data-preview="live">live from the Google Sheet</span> the moment the page loads. Nothing here is invented.</p>
+
+    <div class="providers-toolbar reveal">
+      <label class="prov-select"><span class="prov-label">Cover type</span>
+        <select id="provType"><option value="All">All types</option></select>
+      </label>
+      <label class="prov-select"><span class="prov-label">Region</span>
+        <select id="provRegion"><option value="All">All regions</option></select>
+      </label>
+      <label class="prov-select"><span class="prov-label">Sort by</span>
+        <select id="provSort">
+          <option value="rating">Rating, highest first</option>
+          <option value="priceLow">Price, low to high</option>
+          <option value="priceHigh">Price, high to low</option>
+          <option value="cover">Cover amount, largest first</option>
+        </select>
+      </label>
+      <span class="prov-count" id="provCount">Loading catalog&hellip;</span>
+    </div>
+
+    <div class="providers-grid" id="providersGrid" aria-live="polite">
+      <p class="prov-loading">Pulling the live catalog from Google Drive&hellip;</p>
+    </div>
+
+    <p class="prov-footnote reveal">Prices, cover, excess, rating and exclusions are the fields published in the shared catalog and are shown exactly as provided. Sample review counts are illustrative, generated from the published rating.</p>
+
+    <div class="page-cta reveal">
+      <a class="btn btn-primary" href="match.html">Find your fit</a>
+    </div>
+  </section>
+
+</main>
+
+<script src="shell.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

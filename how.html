@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How the five agents work | Policy Fit Checker</title>
+<meta name="description" content="How the Policy Fit Checker pipeline works: Nadia researches, Milo scores, Priya builds, Sasha explains, Callum signs the recommendation.">
+<meta name="theme-color" content="#0B0B0A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main>
+
+  <!-- ================= HOW IT WORKS / PIPELINE ================= -->
+  <section class="how wrap-section" id="pipeline-section" aria-labelledby="how-heading">
+    <p class="page-kicker">( 05 · pipeline )</p>
+    <h2 class="section-title reveal" id="how-heading">How the five agents work</h2>
+    <p class="section-lede reveal">A small organisation, visible while it works. Click any agent to meet it, address it in the chat, or run a real match and watch the handoffs happen for real.</p>
+
+    <ol class="agents-list">
+      <li data-persona="nadia" class="reveal" tabindex="0" role="button" aria-label="Meet Nadia, the Researcher">
+        <h3>Nadia <span>Researcher</span></h3>
+        <p>Queries the live policy catalog at the moment you ask, filters it against your age band and life stage, and names the gaps honestly.</p>
+      </li>
+      <li data-persona="milo" class="reveal" tabindex="0" role="button" aria-label="Meet Milo, the Designer">
+        <h3>Milo <span>Designer</span></h3>
+        <p>Decides how the candidates should be compared, and scores every eligible policy against what actually matters for your profile.</p>
+      </li>
+      <li data-persona="priya" class="reveal" tabindex="0" role="button" aria-label="Meet Priya, the Maker">
+        <h3>Priya <span>Maker</span></h3>
+        <p>Builds your shortlist from the real catalog fields: name, provider, premium, coverage. Nothing is invented; if the data is missing, she says so.</p>
+      </li>
+      <li data-persona="sasha" class="reveal" tabindex="0" role="button" aria-label="Meet Sasha, the Communicator">
+        <h3>Sasha <span>Communicator</span></h3>
+        <p>Writes the one-line reason under each policy in plain language, grounded in the actual numbers and the actual fine print.</p>
+      </li>
+      <li data-persona="callum" class="reveal" tabindex="0" role="button" aria-label="Meet Callum, the Manager">
+        <h3>Callum <span>Manager</span></h3>
+        <p>Reviews the handoffs, keeps the honest empty state visible when the catalog has nothing good, and synthesises the final recommendation.</p>
+      </li>
+    </ol>
+
+    <p class="how-note reveal">This site runs on a static site with no backend. The agents' reasoning is deterministic and grounded in the live catalog, so the demo always works; the optional live-LLM variant is documented in the repo.</p>
+
+    <div class="page-cta reveal">
+      <a class="btn btn-primary" href="match.html">Watch the pipeline run</a>
+      <a class="btn btn-ghost" href="chat.html">Talk to the team</a>
+    </div>
+  </section>
+
+</main>
+
+<script src="shell.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

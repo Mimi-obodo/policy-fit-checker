@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Find your fit | Policy Fit Checker</title>
+<meta name="description" content="Tell the five agents about your life and watch the live pipeline query the Google Drive catalog and return an explained shortlist.">
+<meta name="theme-color" content="#0B0B0A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main>
+
+  <!-- ================= MATCH: intake → pipeline → results ================= -->
+  <section class="match wrap-section" id="match" aria-labelledby="match-heading">
+    <p class="page-kicker">( 09 · find your fit )</p>
+    <h2 class="section-title reveal" id="match-heading">Tell us about your life</h2>
+    <p class="section-lede reveal">Six short questions, one at a time. Enough to change the match, nothing that doesn't. Everything happens on this page: you answer, the agents run, the shortlist appears below.</p>
+
+    <form id="intakeForm" class="reveal" novalidate>
+      <div class="intake-card" role="group" aria-labelledby="stepTitle">
+        <div class="intake-stepbar" id="stepBar" aria-hidden="true">
+          <span data-step="0"></span><span data-step="1"></span><span data-step="2"></span><span data-step="3"></span><span data-step="4"></span><span data-step="5"></span>
+        </div>
+
+        <h3 class="intake-question" id="stepTitle"></h3>
+        <p class="intake-hint" id="stepHint"></p>
+        <div class="intake-control" id="stepControl"></div>
+
+        <div class="intake-nav">
+          <button type="button" class="btn btn-ghost" id="stepBack" hidden>Back</button>
+          <button type="button" class="btn btn-primary" id="stepNext">Continue</button>
+        </div>
+        <p class="intake-privacy">We never see your answers. They are used only in your browser, for this match, and never stored or sent anywhere except to query the public catalog.</p>
+      </div>
+    </form>
+  </section>
+
+  <!-- ================= PIPELINE ================= -->
+  <section class="pipeline-section wrap-section" id="pipeline-section" aria-labelledby="pipeline-heading">
+    <h2 class="section-title reveal" id="pipeline-heading">The agents on the line</h2>
+    <p class="section-lede reveal">Nadia queries the live catalog, then hands the profile down the line. Click any agent to meet it.</p>
+
+    <div class="pipeline" id="pipeline" role="group" aria-label="The five agent pipeline">
+      <div class="pipeline-track" aria-hidden="true"><span class="pulse"></span></div>
+      <button type="button" class="node" data-node="nadia" data-persona="nadia" aria-label="Meet Nadia, the Researcher">
+        <span class="node-idx">1</span>
+        <span class="node-meta"><b>Nadia</b><i>Researcher</i><span class="node-status">Idle</span></span>
+      </button>
+      <button type="button" class="node" data-node="milo" data-persona="milo" aria-label="Meet Milo, the Designer">
+        <span class="node-idx">2</span>
+        <span class="node-meta"><b>Milo</b><i>Designer</i><span class="node-status">Idle</span></span>
+      </button>
+      <button type="button" class="node" data-node="priya" data-persona="priya" aria-label="Meet Priya, the Maker">
+        <span class="node-idx">3</span>
+        <span class="node-meta"><b>Priya</b><i>Maker</i><span class="node-status">Idle</span></span>
+      </button>
+      <button type="button" class="node" data-node="sasha" data-persona="sasha" aria-label="Meet Sasha, the Communicator">
+        <span class="node-idx">4</span>
+        <span class="node-meta"><b>Sasha</b><i>Communicator</i><span class="node-status">Idle</span></span>
+      </button>
+      <button type="button" class="node" data-node="callum" data-persona="callum" aria-label="Meet Callum, the Manager">
+        <span class="node-idx">5</span>
+        <span class="node-meta"><b>Callum</b><i>Manager</i><span class="node-status">Idle</span></span>
+      </button>
+    </div>
+
+    <div class="pipeline-log" id="pipelineLog" aria-live="polite">
+      <p class="log-placeholder">The line is quiet. Answer the six questions above and the line comes alive with a live query of the published catalog.</p>
+    </div>
+  </section>
+
+  <!-- ================= RESULTS ================= -->
+  <section class="results wrap-section" id="results" aria-labelledby="results-heading" hidden>
+    <h2 class="section-title" id="results-heading">Your shortlist</h2>
+    <p class="pipeline-summary" id="pipelineSummary" aria-live="polite"></p>
+    <div class="verdict" id="verdict" hidden></div>
+    <div class="cards" id="resultCards"></div>
+    <div class="empty-state" id="emptyState" hidden></div>
+    <div class="results-actions">
+      <button class="btn btn-ghost" id="runAgain">Run the pipeline again</button>
+    </div>
+  </section>
+
+</main>
+
+<script src="shell.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

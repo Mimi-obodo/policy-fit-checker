@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PFC Mobile, coming soon | Policy Fit Checker</title>
+<meta name="description" content="PFC Mobile: the same five-agent team in your pocket. A design preview and waitlist for the mobile concept.">
+<meta name="theme-color" content="#0B0B0A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main>
+
+  <!-- ================= MOBILE APP ================= -->
+  <section class="mobile wrap-section" id="mobile" aria-labelledby="mobile-heading">
+    <p class="page-kicker">( 07 · pfc mobile )</p>
+    <h2 class="section-title reveal" id="mobile-heading">Coming soon</h2>
+    <p class="section-lede reveal">The same five-agent team, in your pocket: a real-time match on the move, notifications when a policy in the live catalog changes, and a copy of every shortlist you ever ran.</p>
+
+    <div class="mobile-grid">
+      <div class="phone-frame reveal" aria-hidden="true">
+        <div class="phone-screen">
+          <div class="phone-status">PFC</div>
+          <div class="phone-card">
+            <p class="phone-label">Top fit</p>
+            <p class="phone-name">Everstead Travel Flex</p>
+            <p class="phone-meta">€30.37/mo · EU-Wide</p>
+            <p class="phone-why">Why: your life stage, your budget, and a welcome for pre-existing conditions.</p>
+          </div>
+          <div class="phone-card slim">
+            <p class="phone-name">Harborlight Life Complete</p>
+            <p class="phone-meta">€57.10/mo · over budget</p>
+          </div>
+          <div class="phone-run">▸ Run a new match</div>
+        </div>
+      </div>
+
+      <div class="mobile-copy reveal">
+        <p>This is a preview of the concept, not a claim that a downloadable app exists. PFC Mobile is a design mock for what the same pipeline would look like on a phone.</p>
+        <p>Leave your email and we will hold your place on the waitlist.</p>
+        <form id="waitlistForm" class="waitlist" novalidate>
+          <label class="sr-only" for="waitlistEmail">Email address</label>
+          <input id="waitlistEmail" type="email" placeholder="you@example.com" required>
+          <button type="submit" class="btn btn-primary" id="waitlistSubmit">Join the waitlist</button>
+        </form>
+        <p class="waitlist-status" id="waitlistStatus" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div class="page-cta reveal">
+      <a class="btn btn-primary" href="match.html">Try the web match now</a>
+    </div>
+  </section>
+
+</main>
+
+<script src="shell.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

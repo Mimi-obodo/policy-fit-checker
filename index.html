@@ -5,40 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Policy Fit Checker: insurance matched to your life, not sorted by price</title>
 <meta name="description" content="Five specialised AI agents work through the live policy catalog and hand your profile to each other, so you get a short, explained shortlist that actually fits your life.">
+<meta name="theme-color" content="#0B0B0A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<a class="skip-link" href="#intake">Skip to the matching flow</a>
+<main>
 
-<header class="site-header">
-  <a class="wordmark" href="#top" aria-label="Policy Fit Checker home">
-    <span class="wordmark-mark">PFC</span>
-    <span>Policy Fit Checker</span>
-  </a>
-  <nav class="site-nav" aria-label="Primary">
-    <a href="#about">About</a>
-    <a href="#education">Education</a>
-    <a href="#cover">Cover List</a>
-    <a href="#pipeline-section">How it works</a>
-    <a href="#chat">Chat</a>
-    <a href="#mobile">Mobile</a>
-    <a class="nav-cta" href="#intake">Find your fit</a>
-  </nav>
-</header>
-
-<main id="top">
-
-  <!-- ================= HERO: kinetic, with wave background ================= -->
+  <!-- ================= HERO: typewriter + imaging ================= -->
   <section class="hero" aria-labelledby="hero-title">
-    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="hero-bg" data-parallax="-0.08" aria-hidden="true"></div>
+    <canvas id="bgCanvas" class="bg-canvas" data-parallax="-0.04" aria-hidden="true"></canvas>
     <div id="heroWaves" class="hero-waves" aria-hidden="true"></div>
 
-    <p class="hero-eyebrow reveal">( pipeline )</p>
-    <h1 class="hero-title" id="hero-title">Insurance matched to your life, <em>not</em> sorted by price.</h1>
+    <p class="hero-eyebrow reveal">( pipeline · five agents · live catalog )</p>
+    <h1 class="hero-title" id="hero-title">
+      <span class="type-line" id="typeLine" aria-label="Insurance matched to your life, not sorted by price."></span><span class="type-caret" aria-hidden="true"></span>
+    </h1>
     <p class="hero-lede reveal">Describe yourself once. Nadia, Milo, Priya, Sasha and Callum hand your profile down the line, query the live policy catalog at the moment you ask, and hand you back two to four policies with a plain reason why each one fits.</p>
 
     <div class="hero-tags" aria-hidden="true">
@@ -48,49 +34,12 @@
       <span class="hero-tag tag-d">( no fine print left unread )</span>
     </div>
 
-    <div class="pipeline" id="pipeline" role="group" aria-label="The five agent pipeline">
-      <div class="pipeline-track" aria-hidden="true"><span class="pulse"></span></div>
-      <button type="button" class="node" data-node="nadia" data-persona="nadia" aria-label="Meet Nadia, the Researcher">
-        <span class="node-idx">1</span>
-        <b>Nadia</b>
-        <i>Researcher</i>
-        <span class="node-status">Idle</span>
-      </button>
-      <button type="button" class="node" data-node="milo" data-persona="milo" aria-label="Meet Milo, the Designer">
-        <span class="node-idx">2</span>
-        <b>Milo</b>
-        <i>Designer</i>
-        <span class="node-status">Idle</span>
-      </button>
-      <button type="button" class="node" data-node="priya" data-persona="priya" aria-label="Meet Priya, the Maker">
-        <span class="node-idx">3</span>
-        <b>Priya</b>
-        <i>Maker</i>
-        <span class="node-status">Idle</span>
-      </button>
-      <button type="button" class="node" data-node="sasha" data-persona="sasha" aria-label="Meet Sasha, the Communicator">
-        <span class="node-idx">4</span>
-        <b>Sasha</b>
-        <i>Communicator</i>
-        <span class="node-status">Idle</span>
-      </button>
-      <button type="button" class="node" data-node="callum" data-persona="callum" aria-label="Meet Callum, the Manager">
-        <span class="node-idx">5</span>
-        <b>Callum</b>
-        <i>Manager</i>
-        <span class="node-status">Idle</span>
-      </button>
-    </div>
-
-    <div class="pipeline-log" id="pipelineLog" aria-live="polite">
-      <p class="log-placeholder">The line is quiet. Click an agent to meet it, or tell us about your life and the line comes alive.</p>
-    </div>
-
     <div class="hero-actions reveal">
-      <a class="btn btn-primary" href="#intake">Find your fit</a>
-      <a class="btn btn-ghost" href="#pipeline-section">See how the agents work</a>
+      <a class="btn btn-primary" href="match.html">Find your fit</a>
+      <a class="btn btn-ghost" href="how.html">See how the agents work</a>
+      <a class="btn btn-ghost" href="chat.html">Chat with the team</a>
     </div>
-    <p class="hero-note reveal">Every policy you see is pulled live from the published catalog at the moment of your request. Nothing is stored or hardcoded on this page.</p>
+    <p class="hero-note reveal">Every policy you see is pulled live from the published catalog at the moment of your request. Nothing is stored or hardcoded on this site.</p>
 
     <div class="hero-stats" aria-label="Key facts about Policy Fit Checker">
       <div class="hero-stat"><b>60+</b><span>policies in the live catalog</span></div>
@@ -98,449 +47,16 @@
       <div class="hero-stat"><b>live</b><span>data fetched at ask time</span></div>
       <div class="hero-stat"><b>2–4</b><span>explained picks, not a list</span></div>
     </div>
+
+    <a class="scroll-to-cta" href="about.html" aria-label="Scroll down to discover">
+      <span class="scroll-cta-text">Explore</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 5v14m0 0 6-6m-6 6-6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
   </section>
-
-  <!-- ================= ABOUT ================= -->
-  <section class="about wrap-section" id="about" aria-labelledby="about-heading">
-    <h2 class="section-title reveal"><span class="paren">( about )</span> About Policy Fit Check</h2>
-
-    <div class="about-prose reveal">
-      <p>Policy Fit Check exists because insurance is confusing on purpose, or at least it can feel that way. Different providers, different fine print, different words for the same thing, and a hundred small conditions buried in a PDF nobody reads.</p>
-      <p>We built a company whose only job is to cut through that. We compare real policies from real providers and match you to the ones that actually fit your life: your age, your circumstances, your budget, the things you actually need covered.</p>
-      <p>We're not trying to sell you a policy. We're trying to help you understand one.</p>
-      <p>That's the difference. A comparison site shows you a list. We try to explain why one option on that list is right for you, and why the others aren't, in plain language, before you commit to anything.</p>
-    </div>
-
-    <article class="story-card reveal">
-      <h3 class="story-eyebrow">A short story: why this exists</h3>
-      <p>A friend of Onyinyechi's, a nurse in her mid-twenties, once bought income protection because a colleague recommended it. She never read past the first page. Two years later, she needed to make a claim, and found out the policy excluded exactly the kind of injury she'd had, a detail that had been sitting in the small print the entire time.</p>
-      <p>Nothing about what she did was careless. She did what almost everyone does: she trusted that a sensible-sounding policy would sensibly cover her. It's the small print that let her down, not her judgement.</p>
-      <p>That's the gap Policy Fit Check is built to close. Not by making insurance simple to the point of leaving things out, but by making sure the fit is right before the signature happens, and that you actually know what you're signing.</p>
-    </article>
-
-    <div class="mv-grid">
-      <article class="mv-card reveal">
-        <h3>Our Mission</h3>
-        <p>To make insurance simpler, more transparent, and more personal, by helping people find the policy that actually fits who they are.</p>
-      </article>
-      <article class="mv-card reveal">
-        <h3>Our Vision</h3>
-        <p>To become the place people trust when they need to make an insurance decision: somewhere you can compare your options, understand what you're looking at, and choose with confidence instead of guesswork.</p>
-      </article>
-    </div>
-
-    <div class="values-block">
-      <h3 class="about-h reveal">Our Core Values</h3>
-      <div class="values-grid">
-        <article class="value-card reveal" tabindex="0">
-          <span class="value-num">( 01 )</span>
-          <h4 class="value-name">Customer First</h4>
-          <p class="values-reveal">Every decision starts with you, not with which provider pays us the most. We're thinking about your situation and what you'll actually need, not just what's easiest to sell today.</p>
-        </article>
-        <article class="value-card reveal" tabindex="0">
-          <span class="value-num">( 02 )</span>
-          <h4 class="value-name">Transparency</h4>
-          <p class="values-reveal">We don't do guessing games. If a policy has a catch, we tell you about the catch. If something's a genuinely good deal, we tell you that too.</p>
-        </article>
-        <article class="value-card reveal" tabindex="0">
-          <span class="value-num">( 03 )</span>
-          <h4 class="value-name">Trust</h4>
-          <p class="values-reveal">Insurance only works if you trust the people explaining it to you. We earn that by being honest even when honest is less convenient, and by never recommending something just because it's easier for us.</p>
-        </article>
-        <article class="value-card reveal" tabindex="0">
-          <span class="value-num">( 04 )</span>
-          <h4 class="value-name">Personalisation</h4>
-          <p class="values-reveal">There's no such thing as the "best" policy for everyone. The right one depends on you: your age, your health, your budget, your life stage. We treat that as the whole point, not a detail.</p>
-        </article>
-        <article class="value-card reveal" tabindex="0">
-          <span class="value-num">( 05 )</span>
-          <h4 class="value-name">Simplicity</h4>
-          <p class="values-reveal">Insurance is genuinely complicated. Our job is to make it feel simple without leaving out the parts you actually need to know. Simple, not simplified into meaninglessness.</p>
-        </article>
-        <article class="value-card reveal" tabindex="0">
-          <span class="value-num">( 06 )</span>
-          <h4 class="value-name">Innovation</h4>
-          <p class="values-reveal">We use real technology, real data, and a genuinely useful set of tools to make finding insurance faster and clearer, while keeping a human, understandable explanation behind every recommendation.</p>
-        </article>
-        <article class="value-card reveal" tabindex="0">
-          <span class="value-num">( 07 )</span>
-          <h4 class="value-name">Integrity</h4>
-          <p class="values-reveal">Our recommendations are guided by what's right for you, full stop. Not by hidden incentives, not by which provider is easiest to work with, not by anything except whether a policy is actually good for the person asking.</p>
-        </article>
-      </div>
-      <p class="value-hint reveal">Hover or tap a card to read its explanation.</p>
-    </div>
-
-    <div class="cover-bridge reveal">
-      <p class="cover-bridge-line">See the kinds of cover we compare</p>
-      <div class="cover-mini-grid">
-        <a class="cover-mini" href="#cover">
-          <span class="flip-icon" data-icon="0"></span>
-          <b>Life</b><small>Protect the people who depend on you.</small>
-        </a>
-        <a class="cover-mini" href="#cover">
-          <span class="flip-icon" data-icon="1"></span>
-          <b>Health</b><small>Private treatment and, on richer plans, day-to-day care.</small>
-        </a>
-        <a class="cover-mini" href="#cover">
-          <span class="flip-icon" data-icon="2"></span>
-          <b>Auto</b><small>Third-party to comprehensive cover for your vehicle.</small>
-        </a>
-        <a class="cover-mini" href="#cover">
-          <span class="flip-icon" data-icon="3"></span>
-          <b>Travel</b><small>Medical bills, cancellation and baggage, single or annual.</small>
-        </a>
-        <a class="cover-mini" href="#cover">
-          <span class="flip-icon" data-icon="4"></span>
-          <b>Home / Renters</b><small>Buildings or contents cover, separately or together.</small>
-        </a>
-        <a class="cover-mini" href="#cover">
-          <span class="flip-icon" data-icon="5"></span>
-          <b>Income Protection</b><small>Part of your salary if illness or injury stops work.</small>
-        </a>
-        <a class="cover-mini" href="#cover">
-          <span class="flip-icon" data-icon="6"></span>
-          <b>Critical Illness</b><small>A lump sum on diagnosis of a listed condition.</small>
-        </a>
-        <a class="cover-mini" href="#cover">
-          <span class="flip-icon" data-icon="7"></span>
-          <b>Pet</b><small>Vets' bills, with lifetime or time-limited cover.</small>
-        </a>
-        <a class="cover-mini" href="#cover">
-          <span class="flip-icon" data-icon="8"></span>
-          <b>Student</b><small>Contents, low-cost health and study-abroad add-ons.</small>
-        </a>
-        <a class="cover-mini" href="#cover">
-          <span class="flip-icon" data-icon="9"></span>
-          <b>Business Liability</b><small>Employers', public and professional indemnity cover.</small>
-        </a>
-      </div>
-    </div>
-
-    <div class="ceo-grid">
-      <figure class="ceo-portrait reveal">
-        <img src="assets/ceo.jpeg" alt="Portrait of Onyinyechi Obodoeze, Founder and CEO. Placeholder photo, illustrative for the academic project." loading="lazy">
-        <figcaption>Onyinyechi Obodoeze, Founder and CEO</figcaption>
-        <p class="portrait-note">Placeholder portrait, illustrative for the academic project.</p>
-      </figure>
-
-      <div class="ceo-copy reveal">
-        <h3 class="about-h">About the CEO</h3>
-        <p>Here's the thing about insurance: almost nobody actually understands what they're buying. You fill in a form, you get a price, you pick the cheapest one, and you hope you never have to find out what it actually covers.</p>
-        <p>Onyinyechi started Policy Fit Check because she kept watching people make that exact guess, over and over, with money they couldn't really afford to gamble.</p>
-        <p>"People should get the policy that's actually built for them, not just the one that's easiest to sell," she says. That's the whole idea, really. Everything else is just how we go about doing it.</p>
-        <p>As CEO, her job is to keep the company pointed at that one idea: build the technology, pick the partners, and make the calls that keep Policy Fit Check working for the customer first, every time, even when the easier business decision would be something else.</p>
-        <p>She's not trying to get you to buy insurance. She's trying to make sure that if you do, you actually know why you bought what you bought.</p>
-      </div>
-    </div>
-
-    <blockquote class="pull-quote reveal">
-      <p>&ldquo;People should get the policy that's actually built for them, not just the one that's easiest to sell.&rdquo;</p>
-      <cite>&mdash; Onyinyechi Obodoeze, Founder and CEO</cite>
-    </blockquote>
-
-    <div class="promise reveal">
-      <p class="promise-question">Before you choose any insurance, there's one question worth asking:</p>
-      <p class="promise-quote">&ldquo;Does this policy actually fit me?&rdquo;</p>
-      <p class="promise-answer">We built Policy Fit Check to help you answer that honestly. Not because you were overwhelmed into picking something. Because you understood it, you trusted it, and you knew exactly why it was the right call for you.</p>
-    </div>
-
-    <p class="caveat about-caveat reveal">Policy Fit Check is a fictional company built for an academic project. No real insurance is sold here, and no real financial advice is given. The policies in the pipeline come from a fictional catalog used to demonstrate how the system works.</p>
-  </section>
-
-  <!-- ================= EDUCATION: word-heavy ================= -->
-  <section class="education wrap-section" id="education" aria-labelledby="education-heading">
-    <h2 class="section-title reveal"><span class="paren">( cover list )</span> Insurance, read properly</h2>
-    <p class="section-lede reveal">The catalog only makes sense if the underlying products do. Here is how real insurers approach each major type of cover, paraphrased from how the market works — the actual policies PFC matches against are the live catalog in the pipeline, not this page.</p>
-
-    <div class="edu-grid">
-      <article class="edu-card reveal" data-preview="life">
-        <h3>Life insurance</h3>
-        <p>Life cover pays a lump sum if the insured person dies during the term. Insurers such as <span class="pv" data-preview="life-aviva">Aviva</span>, <span class="pv" data-preview="life-lg">Legal &amp; General</span> and <span class="pv" data-preview="life-zurich">Zurich</span> typically offer level term cover (the sum stays flat) and decreasing term (commonly mortgage-linked), and almost all exclude suicide within roughly the first 12–13 months of the policy. Premiums rise with age and health risk; a waiting period before a claim is normal.</p>
-      </article>
-      <article class="edu-card reveal" data-preview="health">
-        <h3>Health insurance</h3>
-        <p>Private medical insurance pays for private hospital treatment and, on richer plans, day-to-day care like GP visits and dental. In Ireland the big names are <span class="pv" data-preview="health-vhi">Vhi</span>, <span class="pv" data-preview="health-laya">Laya</span> and <span class="pv" data-preview="health-ilh">Irish Life Health</span>; in the UK, <span class="pv" data-preview="health-bupa">Bupa</span> is a common example. Nearly every health plan applies waiting periods for new or pre-existing conditions, and some insurers now include mental-health support packages rather than excluding them outright.</p>
-      </article>
-      <article class="edu-card reveal" data-preview="income">
-        <h3>Income protection</h3>
-        <p>Income protection replaces part of your salary if illness or injury stops you working. Insurers such as <span class="pv" data-preview="income-aviva">Aviva</span>, <span class="pv" data-preview="income-lloyds">Royal London</span> and <span class="pv" data-preview="income-legal">Legal &amp; General</span> use a deferred (waiting) period, commonly between 4 and 13 weeks, before payments start. The definition matters enormously: "own-occupation" pays if you cannot do your own job, while "any-occupation" only pays if you cannot do any job.</p>
-      </article>
-      <article class="edu-card reveal" data-preview="home">
-        <h3>Home &amp; renters insurance</h3>
-        <p>Buildings cover protects the structure, contents cover protects what is inside it, and you can usually buy either separately. Insurers like <span class="pv" data-preview="home-axa">AXA</span>, <span class="pv" data-preview="home-zurich">Zurich</span> and <span class="pv" data-preview="home-aviva">Aviva</span> commonly exclude wear and tear and policies often go unoccupied for more than 60 days. Renters rarely need buildings cover, which is why the catalog carries contents-only options.</p>
-      </article>
-      <article class="edu-card reveal" data-preview="travel">
-        <h3>Travel insurance</h3>
-        <p>Travel cover splits into single-trip and annual multi-trip, with medical bills, cancellation and baggage. Providers such as <span class="pv" data-preview="travel-allianz">Allianz</span> and <span class="pv" data-preview="travel-axa">AXA</span> routinely exclude travel against government advisories and typically ask you to declare pre-existing conditions rather than quietly rejecting them. Medical cover limits on cheaper plans can be dramatically lower than on premium ones.</p>
-      </article>
-      <article class="edu-card reveal" data-preview="auto">
-        <h3>Auto insurance</h3>
-        <p>Motor cover runs from third-party only up to fully comprehensive, with optional extras like breakdown cover and no-claims protection. Insurers such as <span class="pv" data-preview="auto-aviva">Aviva</span>, <span class="pv" data-preview="auto-axa">AXA</span> and <span class="pv" data-preview="auto-allianz">Allianz</span> treat driving under the influence and racing or track-day use as voiding claims, and many now offer telematics (black-box) discounts to younger drivers.</p>
-      </article>
-    </div>
-
-    <div class="pull-quote reveal" aria-label="Quote">
-      <blockquote>“An investment in knowledge pays the best interest.”</blockquote>
-      <cite>— Benjamin Franklin</cite>
-    </div>
-
-    <div class="edu-grid">
-      <article class="edu-card reveal">
-        <h3>Critical illness</h3>
-        <p>Critical illness pays a lump sum on diagnosis of a listed condition, typically 40 or more. Most policies apply a survival period (commonly around 27 days) and exclude conditions diagnosed before the policy started. Because it pays on diagnosis rather than on death, it is often paired with life cover rather than replacing it.</p>
-      </article>
-      <article class="edu-card reveal">
-        <h3>Pet insurance</h3>
-        <p>Pet cover pays vets' bills, usually with a choice between lifetime cover, 12-month time-limited cover, and accident-only. The market-wide catch is that pre-existing conditions and routine or preventative care are almost always excluded, and lifetime plans cap what they pay per condition each year.</p>
-      </article>
-      <article class="edu-card reveal">
-        <h3>Student cover</h3>
-        <p>Student products bundle the things young renters and travellers actually need: contents cover for shared accommodation, low-cost health cover for under-26s, and study-abroad travel add-ons. The honest catch is that theft without forced entry and undeclared high-value items are typically excluded, which matters in shared houses.</p>
-      </article>
-      <article class="edu-card reveal">
-        <h3>Business liability</h3>
-        <p>Business liability covers claims against a company, including employers' liability (statutory in most places), public liability, and professional indemnity. Insurers such as <span class="pv" data-preview="biz-allianz">Allianz</span> and <span class="pv" data-preview="biz-aviva">Aviva</span> tend to exclude contractual liability beyond common law and deliberate acts, and cyber liability is now commonly sold as an add-on.</p>
-      </article>
-    </div>
-
-    <div class="pull-quote reveal" aria-label="Quote">
-      <blockquote>“Risk comes from not knowing what you're doing.”</blockquote>
-      <cite>— Warren Buffett</cite>
-    </div>
-
-    <p class="edu-source reveal">Sources: publicly available descriptions of how these markets operate. PFC paraphrases how insurers generally approach each line; it quotes no insurer's marketing material and does not present any of the above as a quote from a live policy. Fictional names in the catalog are not real providers.</p>
-  </section>
-
-  <!-- ================= COVER LIST: flip cards ================= -->
-  <section class="cover wrap-section" id="cover" aria-labelledby="cover-heading">
-    <h2 class="section-title reveal"><span class="paren">( cover list )</span> Ten types of cover we match</h2>
-    <p class="section-lede reveal">Flip a card to see who each type of cover is for and what it protects. This page is informational; the actual matching happens live against the catalog.</p>
-
-    <div class="flip-grid">
-      <div class="flip-card" tabindex="0" role="button" aria-label="Life insurance. Flip to read more.">
-        <div class="flip-inner">
-          <div class="flip-front"><span class="flip-icon" data-icon="0"></span><span>Life</span></div>
-          <div class="flip-back"><p>A lump sum to dependants if you die within the term.</p></div>
-        </div>
-      </div>
-      <div class="flip-card" tabindex="0" role="button" aria-label="Health insurance. Flip to read more.">
-        <div class="flip-inner">
-          <div class="flip-front"><span class="flip-icon" data-icon="1"></span><span>Health</span></div>
-          <div class="flip-back"><p>Private treatment and, on richer plans, day-to-day care.</p></div>
-        </div>
-      </div>
-      <div class="flip-card" tabindex="0" role="button" aria-label="Auto insurance. Flip to read more.">
-        <div class="flip-inner">
-          <div class="flip-front"><span class="flip-icon" data-icon="2"></span><span>Auto</span></div>
-          <div class="flip-back"><p>Third-party to comprehensive cover for your vehicle.</p></div>
-        </div>
-      </div>
-      <div class="flip-card" tabindex="0" role="button" aria-label="Travel insurance. Flip to read more.">
-        <div class="flip-inner">
-          <div class="flip-front"><span class="flip-icon" data-icon="3"></span><span>Travel</span></div>
-          <div class="flip-back"><p>Medical bills, cancellation and baggage, single or annual.</p></div>
-        </div>
-      </div>
-      <div class="flip-card" tabindex="0" role="button" aria-label="Home and renters insurance. Flip to read more.">
-        <div class="flip-inner">
-          <div class="flip-front"><span class="flip-icon" data-icon="4"></span><span>Home / Renters</span></div>
-          <div class="flip-back"><p>Buildings or contents cover, separately or together.</p></div>
-        </div>
-      </div>
-      <div class="flip-card" tabindex="0" role="button" aria-label="Income protection. Flip to read more.">
-        <div class="flip-inner">
-          <div class="flip-front"><span class="flip-icon" data-icon="5"></span><span>Income Protection</span></div>
-          <div class="flip-back"><p>Part of your salary if illness or injury stops work.</p></div>
-        </div>
-      </div>
-      <div class="flip-card" tabindex="0" role="button" aria-label="Critical illness insurance. Flip to read more.">
-        <div class="flip-inner">
-          <div class="flip-front"><span class="flip-icon" data-icon="6"></span><span>Critical Illness</span></div>
-          <div class="flip-back"><p>A lump sum on diagnosis of a listed condition.</p></div>
-        </div>
-      </div>
-      <div class="flip-card" tabindex="0" role="button" aria-label="Pet insurance. Flip to read more.">
-        <div class="flip-inner">
-          <div class="flip-front"><span class="flip-icon" data-icon="7"></span><span>Pet</span></div>
-          <div class="flip-back"><p>Vets' bills, with lifetime or time-limited cover.</p></div>
-        </div>
-      </div>
-      <div class="flip-card" tabindex="0" role="button" aria-label="Student insurance. Flip to read more.">
-        <div class="flip-inner">
-          <div class="flip-front"><span class="flip-icon" data-icon="8"></span><span>Student</span></div>
-          <div class="flip-back"><p>Contents, low-cost health and study-abroad add-ons.</p></div>
-        </div>
-      </div>
-      <div class="flip-card" tabindex="0" role="button" aria-label="Business liability insurance. Flip to read more.">
-        <div class="flip-inner">
-          <div class="flip-front"><span class="flip-icon" data-icon="9"></span><span>Business Liability</span></div>
-          <div class="flip-back"><p>Employers', public and professional indemnity cover.</p></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= HOW IT WORKS / PIPELINE ================= -->
-  <section class="how wrap-section" id="pipeline-section" aria-labelledby="how-heading">
-    <h2 class="section-title reveal"><span class="paren">( pipeline )</span> How the five agents work</h2>
-    <p class="section-lede reveal">A small organisation, visible while it works. Click any agent to meet it, address it in the chat below, or run a real match above and watch the handoffs happen for real.</p>
-
-    <ol class="agents-list">
-      <li data-agent="nadia" class="reveal">
-        <h3>Nadia <span>Researcher</span></h3>
-        <p>Queries the live policy catalog at the moment you ask, filters it against your age band and life stage, and names the gaps honestly.</p>
-      </li>
-      <li data-agent="milo" class="reveal">
-        <h3>Milo <span>Designer</span></h3>
-        <p>Decides how the candidates should be compared, and scores every eligible policy against what actually matters for your profile.</p>
-      </li>
-      <li data-agent="priya" class="reveal">
-        <h3>Priya <span>Maker</span></h3>
-        <p>Builds your shortlist from the real catalog fields: name, provider, premium, coverage. Nothing is invented; if the data is missing, she says so.</p>
-      </li>
-      <li data-agent="sasha" class="reveal">
-        <h3>Sasha <span>Communicator</span></h3>
-        <p>Writes the one-line reason under each policy in plain language, grounded in the actual numbers and the actual fine print.</p>
-      </li>
-      <li data-agent="callum" class="reveal">
-        <h3>Callum <span>Manager</span></h3>
-        <p>Reviews the handoffs, keeps the honest empty state visible when the catalog has nothing good, and synthesises the final recommendation.</p>
-      </li>
-    </ol>
-
-    <p class="how-note reveal">This page runs on a static site with no backend. The agents' reasoning is deterministic and grounded in the live catalog, so the demo always works; the optional live-LLM variant is documented in the repo.</p>
-  </section>
-
-  <!-- ================= CHAT WITH THE AGENTS ================= -->
-  <section class="chat-section wrap-section" id="chat" aria-labelledby="chat-heading">
-    <h2 class="section-title reveal"><span class="paren">( chat )</span> Talk to the team</h2>
-    <p class="section-lede reveal">Address one agent by name, or ask the team. Questions about which policy fits go through the same live matching pipeline you used above; everything is grounded in the personas and the live catalog.</p>
-
-    <div class="chat-shell reveal">
-      <div class="chat-log" id="chatLog" aria-live="polite" tabindex="0">
-        <p class="chat-line bot"><span class="chat-who">Callum:</span> Ask us anything. Try "which policy fits a student in Ireland", or ask me, Sasha, Priya, Milo or Nadia by name.</p>
-      </div>
-      <div class="chat-chips" aria-label="Suggested questions">
-        <button type="button" class="chip" data-q="Which policy fits a student in Ireland under 30 a month?">Fit a student</button>
-        <button type="button" class="chip" data-q="What data do you use to match me?">What data do you use?</button>
-        <button type="button" class="chip" data-q="How do you handle pre-existing conditions?">Pre-existing conditions</button>
-        <button type="button" class="chip" data-q="Which agent are you, and what do you do?">Meet the team</button>
-      </div>
-      <form class="chat-form" id="chatForm" novalidate>
-        <label class="sr-only" for="chatInput">Ask the agents a question</label>
-        <input id="chatInput" type="text" placeholder="Ask the team…" autocomplete="off">
-        <button type="submit" class="btn btn-primary" id="chatSend">Send</button>
-      </form>
-      <p class="chat-mode">The team is running in deterministic mode: answers are grounded in each agent's persona and, where relevant, the live catalog. No messages leave this page.</p>
-    </div>
-  </section>
-
-  <!-- ================= INTAKE: a short human conversation ================= -->
-  <section class="intake wrap-section" id="intake" aria-labelledby="intake-heading">
-    <h2 class="section-title reveal" id="intake-heading"><span class="paren">( find your fit )</span> Tell us about your life</h2>
-    <p class="section-lede reveal">Six short questions. One at a time. Enough to change the match, nothing that doesn't.</p>
-
-    <form id="intakeForm" novalidate>
-      <div class="intake-card" role="group" aria-labelledby="stepTitle">
-        <div class="intake-stepbar" id="stepBar" aria-hidden="true">
-          <span data-step="0"></span><span data-step="1"></span><span data-step="2"></span><span data-step="3"></span><span data-step="4"></span><span data-step="5"></span>
-        </div>
-
-        <h3 class="intake-question" id="stepTitle"></h3>
-        <p class="intake-hint" id="stepHint"></p>
-        <div class="intake-control" id="stepControl"></div>
-
-        <div class="intake-nav">
-          <button type="button" class="btn btn-ghost" id="stepBack" hidden>Back</button>
-          <button type="button" class="btn btn-primary" id="stepNext">Continue</button>
-        </div>
-        <p class="intake-privacy">We never see your answers. They are used only in your browser, for this match, and never stored or sent anywhere except to query the public catalog.</p>
-      </div>
-    </form>
-  </section>
-
-  <!-- ================= RESULTS ================= -->
-  <section class="results wrap-section" id="results" aria-labelledby="results-heading" hidden>
-    <h2 class="section-title" id="results-heading">Your shortlist</h2>
-    <div class="verdict" id="verdict" hidden></div>
-    <div class="cards" id="resultCards"></div>
-    <div class="empty-state" id="emptyState" hidden></div>
-    <div class="results-actions">
-      <button class="btn btn-ghost" id="runAgain">Run the pipeline again</button>
-    </div>
-  </section>
-
-  <!-- ================= MOBILE APP ================= -->
-  <section class="mobile wrap-section" id="mobile" aria-labelledby="mobile-heading">
-    <h2 class="section-title reveal"><span class="paren">( pfc mobile )</span> Coming soon</h2>
-    <p class="section-lede reveal">The same five-agent team, in your pocket: a real-time match on the move, notifications when a policy in the live catalog changes, and a copy of every shortlist you ever ran.</p>
-
-    <div class="mobile-grid">
-      <div class="phone-frame reveal" aria-hidden="true">
-        <div class="phone-screen">
-          <div class="phone-status">PFC</div>
-          <div class="phone-card">
-            <p class="phone-label">Top fit</p>
-            <p class="phone-name">Everstead Travel Flex</p>
-            <p class="phone-meta">€30.37/mo · EU-Wide</p>
-            <p class="phone-why">Why: your life stage, your budget, and a welcome for pre-existing conditions.</p>
-          </div>
-          <div class="phone-card slim">
-            <p class="phone-name">Harborlight Life Complete</p>
-            <p class="phone-meta">€57.10/mo · over budget</p>
-          </div>
-          <div class="phone-run">▸ Run a new match</div>
-        </div>
-      </div>
-
-      <div class="mobile-copy reveal">
-        <p>This is a preview of the concept, not a claim that a downloadable app exists. PFC Mobile is a design mock for what the same pipeline would look like on a phone.</p>
-        <p>Leave your email and we will hold your place on the waitlist.</p>
-        <form id="waitlistForm" class="waitlist" novalidate>
-          <label class="sr-only" for="waitlistEmail">Email address</label>
-          <input id="waitlistEmail" type="email" placeholder="you@example.com" required>
-          <button type="submit" class="btn btn-primary" id="waitlistSubmit">Join the waitlist</button>
-        </form>
-        <p class="waitlist-status" id="waitlistStatus" aria-live="polite"></p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= UI/UX PRINCIPLES ================= -->
-  <section class="principles wrap-section" id="principles" aria-labelledby="principles-heading">
-    <h2 class="section-title reveal"><span class="paren">( principles )</span> The UI/UX principles this site is built on</h2>
-    <div class="principle-grid">
-      <div class="principle reveal"><h3>Visibility of system status</h3><p>The pipeline is never decorative: nodes show idle, working and done states that track real execution, and a live log reports what actually happened with the real catalog.</p></div>
-      <div class="principle reveal"><h3>Honest language</h3><p>No fake matches, no padded empty states, no invented data. When the catalog is thin, the site says so in plain words.</p></div>
-      <div class="principle reveal"><h3>Progressive disclosure</h3><p>Six questions, one at a time. The match runs only when enough is known to run it well.</p></div>
-      <div class="principle reveal"><h3>Recognition over recall</h3><p>Labels say "Senior" not "life stage category 07". The agents have names, faces and roles before they are expected to be trusted.</p></div>
-      <div class="principle reveal"><h3>Consistency</h3><p>One token system — ink, parchment, emerald, signal — and one type pairing across every section, so motion never has to carry branding.</p></div>
-      <div class="principle reveal"><h3>Accessibility</h3><p>Keyboard focus is visible everywhere, reduced-motion users get a stepped indicator instead of the pulse, and every interaction has a non-motion fallback.</p></div>
-      <div class="principle reveal"><h3>Feedback and affordance</h3><p>Buttons always do something, chips are obviously chips, and every agent node is a button you can actually press to meet the agent.</p></div>
-      <div class="principle reveal"><h3>Responsive by default</h3><p>Everything degrades gracefully to one column and a stacked pipeline on a phone, not a second design.</p></div>
-    </div>
-  </section>
-
-  <!-- ================= CONTACT / FOOTER ================= -->
-  <footer class="site-footer" id="contact">
-    <nav class="footer-nav" aria-label="Footer">
-      <a href="#about">About</a>
-      <a href="#education">Education</a>
-      <a href="#cover">Cover List</a>
-      <a href="#pipeline-section">How it works</a>
-      <a href="#chat">Chat</a>
-      <a href="#mobile">Mobile</a>
-      <a href="#intake">Find your fit</a>
-    </nav>
-    <p>Policy Fit Checker: five-agent pipeline, live Google Sheets catalog, static GitHub Pages.</p>
-    <p class="footer-meta">PFC is a fictional company built for an academic project. No real insurance is sold, and no real financial advice is given.</p>
-    <p class="footer-meta"><a href="https://github.com/Mimi-obodo/policy-fit-checker" rel="noopener">github.com/Mimi-obodo/policy-fit-checker</a> · <a href="mailto:hello@pfc.example">hello@pfc.example</a> (placeholder)</p>
-    <p class="footer-meta">No secrets here. Everything this page needs is fetched client-side at the moment of use.</p>
-  </footer>
 
 </main>
 
+<script src="shell.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -12,8 +12,13 @@
    Live data source (the only piece of "data" in this file: a URL, not data)
    -------------------------------------------------------------------------- */
 var SHEET_ID = "1ZzLcYTmbQ79kY4tHG52gfPWZdgsTdOs9yLBMZrFdcS8";
-var SHEET_CSV = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv";
-var SHEET_JSONP = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json;responseHandler:pfcCallback";
+var SHEET_GID = "1610292741";
+function sheetCsvUrl() {
+  return "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv&gid=" + SHEET_GID + "&cb=" + Date.now();
+}
+function sheetJsonpUrl() {
+  return "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?gid=" + SHEET_GID + "&tqx=out:json;responseHandler:pfcCallback&cb=" + Date.now();
+}
 
 /* --------------------------------------------------------------------------
    Persona voices (templated, grounded in live fields, per each agent's tone)
@@ -100,13 +105,13 @@ function loadViaJSONP() {
     };
     var timer = setTimeout(function () { if (!done) { done = true; cleanup(); reject(new Error("Catalog request timed out")); } }, 20000);
     s.onerror = function () { if (!done) { done = true; clearTimeout(timer); cleanup(); reject(new Error("Catalog could not be reached")); } };
-    s.src = SHEET_JSONP;
+    s.src = sheetJsonpUrl();
     document.head.appendChild(s);
   });
 }
 
 function fetchCatalog() {
-  return fetch(SHEET_CSV)
+  return fetch(sheetCsvUrl())
     .then(function (res) {
       if (!res.ok) throw new Error("HTTP " + res.status);
       return res.text();
@@ -292,6 +297,17 @@ var nodes = {};
 function initNodes() {
   document.querySelectorAll(".node").forEach(function (el) { nodes[el.getAttribute("data-node")] = el; });
 }
+function movePulse(key) {
+  var el = nodes[key];
+  if (!el) return;
+  var track = document.querySelector(".pipeline .pipeline-track .pulse");
+  if (!track) return;
+  var pipe = el.offsetParent;
+  if (!pipe) return;
+  var center = el.offsetLeft + el.offsetWidth / 2;
+  var pct = 6 + (center / (pipe.offsetWidth || 1)) * 88;
+  track.style.left = Math.min(94, Math.max(6, pct)) + "%";
+}
 function setNode(key, state, statusText) {
   var el = nodes[key];
   if (!el) return;
@@ -299,23 +315,28 @@ function setNode(key, state, statusText) {
   if (state) el.classList.add(state);
   var st = el.querySelector(".node-status");
   if (st && statusText) st.textContent = statusText;
+  movePulse(key);
 }
 function resetPipeline() {
   ["nadia", "milo", "priya", "sasha", "callum"].forEach(function (k) {
     setNode(k, null, "Idle");
   });
-  $("#pipeline").classList.remove("running");
-  $("#pipelineLog").innerHTML = "";
+  var p = $("#pipeline");
+  if (p) p.classList.remove("running");
+  var log = $("#pipelineLog");
+  if (log) log.innerHTML = "";
 }
 
 var logId = 0;
 function appendLog(text, cls) {
+  var log = $("#pipelineLog");
+  if (!log) return;
   var el = document.createElement("p");
   el.className = "log-line " + (cls || "");
   el.textContent = text;
-  $("#pipelineLog").appendChild(el);
+  log.appendChild(el);
   logId++;
-  $("#pipelineLog").scrollTop = $("#pipelineLog").scrollHeight;
+  log.scrollTop = log.scrollHeight;
 }
 
 async function pipelineStep(key, activeLabel, work) {
@@ -331,7 +352,8 @@ async function runPipeline(profile) {
   if (window.__pfcRunning) return;
   window.__pfcRunning = true;
   resetPipeline();
-  $("#pipeline").classList.add("running");
+  var pipeEl = $("#pipeline");
+  if (pipeEl) pipeEl.classList.add("running");
   try {
     /* Nadia: the genuinely live query happens here, at the moment of use */
     var catalog = await pipelineStep("nadia",
@@ -363,10 +385,20 @@ async function runPipeline(profile) {
       function () { return Promise.resolve(callumSynthesise(built.shortlist, profile, nadia)); });
     appendLog(verdict.note, "done");
 
+    window.__lastRun = {
+      total: nadia.total,
+      eligible: nadia.eligible.length,
+      shortlisted: built.shortlist.length,
+      at: new Date(),
+      profile: profile,
+      top: scored[0]
+    };
+
     renderResults(built, copy, verdict);
   } catch (err) {
     setNode("nadia", null, "Failed");
-    $("#pipelineLog").innerHTML = "";
+    var logEl = $("#pipelineLog");
+    if (logEl) logEl.innerHTML = "";
     appendLog("The live catalog could not be reached: " + err.message + ". This page never fakes a match; try again in a moment.", "agent");
     var res = $("#results");
     res.hidden = false;
@@ -398,6 +430,36 @@ function renderResults(built, copy, verdict) {
   $("#resultCards").innerHTML = "";
   $("#verdict").hidden = built.shortlist.length === 0;
   $("#verdict").innerHTML = verdict.html;
+
+  var sum = $("#pipelineSummary");
+  if (sum && window.__lastRun) {
+    var lr = window.__lastRun;
+    sum.innerHTML =
+      "<b>Live run, " + lr.at.toLocaleTimeString() + ".</b> Nadia queried " + lr.total + " polic" + (lr.total === 1 ? "y" : "ies") +
+      " from the Google Drive catalog; Milo scored " + lr.eligible + " eligible against your profile; Priya built the shortlist; Callum signed it off. Nothing here is cached or hardcoded.";
+  } else if (sum) {
+    sum.innerHTML = "<b>Live run.</b> Queried from the Google Drive catalog at the moment you asked.";
+  }
+
+  var oldSb = res.querySelector(".score-breakdown");
+  if (oldSb) oldSb.remove();
+  if (built.shortlist.length && built.shortlist[0].score && built.shortlist[0].score.parts) {
+    var labels = { life: "Life stage", condition: "Health fit", budget: "Budget", region: "Region", rating: "Rating", coverage: "Coverage" };
+    var sb = document.createElement("div");
+    sb.className = "score-breakdown";
+    var parts = built.shortlist[0].score.parts;
+    Object.keys(parts).forEach(function (k) {
+      var row = document.createElement("div");
+      row.className = "sb-row";
+      var pct = Math.max(2, Math.min(100, parts[k]));
+      row.innerHTML =
+        "<i>" + esc(labels[k] || k) + "</i>" +
+        '<span class="sb-track"><span class="sb-fill" style="width:' + pct + '%"></span></span>' +
+        "<b>" + Math.round(parts[k]) + "</b>";
+      sb.appendChild(row);
+    });
+    res.insertBefore(sb, $("#resultCards"));
+  }
 
   if (built.shortlist.length === 0) {
     $("#emptyState").hidden = false;
@@ -547,30 +609,31 @@ function finishAndRun() {
   runPipeline(profile);
 }
 
-$("#stepNext").addEventListener("click", function () {
-  var s = STEPS[stepIdx];
-  if (s.type === "options") {
-    var checked = $("#stepControl input[name='step']:checked");
-    if (!checked) return;
-    answers[s.key] = checked.value;
-  } else {
-    answers[s.key] = parseInt($("#stepControl input[type='range']").value, 10);
-  }
-  if (stepIdx < STEPS.length - 1) { setStep(stepIdx + 1); return; }
-  finishAndRun();
-});
-
-$("#stepBack").addEventListener("click", function () { if (stepIdx > 0) setStep(stepIdx - 1); });
-$("#runAgain").addEventListener("click", function () {
-  $("#intake").scrollIntoView({ behavior: "smooth", block: "start" });
+function initIntake() {
+  if (!$("#intakeForm")) return;
+  initNodes();
   setStep(0);
-});
 
-/* --------------------------------------------------------------------------
-   Boot
-   -------------------------------------------------------------------------- */
-initNodes();
-setStep(0);
+  $("#stepNext").addEventListener("click", function () {
+    var s = STEPS[stepIdx];
+    if (s.type === "options") {
+      var checked = $("#stepControl input[name='step']:checked");
+      if (!checked) return;
+      answers[s.key] = checked.value;
+    } else {
+      answers[s.key] = parseInt($("#stepControl input[type='range']").value, 10);
+    }
+    if (stepIdx < STEPS.length - 1) { setStep(stepIdx + 1); return; }
+    finishAndRun();
+  });
+
+  $("#stepBack").addEventListener("click", function () { if (stepIdx > 0) setStep(stepIdx - 1); });
+  var again = $("#runAgain");
+  if (again) again.addEventListener("click", function () {
+    $("#intake").scrollIntoView({ behavior: "smooth", block: "start" });
+    setStep(0);
+  });
+}
 
 /* ==========================================================================
    Vanilla rebuild additions (master brief): waves, previews, personas, chat
@@ -761,7 +824,9 @@ var PREVIEWS = {
   "auto-axa":       { image: "https://picsum.photos/seed/pfc-auto-axa/560/320", title: "AXA", subtitle: "A real motor insurer; comprehensive cover and no-claims protection are standard." },
   "auto-allianz":   { image: "https://picsum.photos/seed/pfc-auto-allianz/560/320", title: "Allianz", subtitle: "A real motor insurer used as an illustrative example of the market." },
   "biz-allianz":    { image: "https://picsum.photos/seed/pfc-biz-allianz/560/320", title: "Allianz", subtitle: "A real insurer of business and liability lines." },
-  "biz-aviva":      { image: "https://picsum.photos/seed/pfc-biz-aviva/560/320", title: "Aviva", subtitle: "A real insurer offering employers' and public liability cover." }
+  "biz-aviva":      { image: "https://picsum.photos/seed/pfc-biz-aviva/560/320", title: "Aviva", subtitle: "A real insurer offering employers' and public liability cover." },
+  "booking":        { image: "https://picsum.photos/seed/pfc-booking/560/320", title: "Booking.com", subtitle: "The booking-site pattern this catalogue borrows: everything real and on show before you choose." },
+  "live":           { image: "https://picsum.photos/seed/pfc-live/560/320", title: "Live Google Sheet", subtitle: "The shared catalog lives in Google Drive and is fetched client-side the moment this page loads." }
 };
 
 function initPreviews() {
@@ -886,6 +951,9 @@ function initPersonas() {
 
   document.querySelectorAll("[data-persona]").forEach(function (el) {
     el.addEventListener("click", function () { open(el.getAttribute("data-persona")); });
+    el.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(el.getAttribute("data-persona")); }
+    });
   });
   closeBtn.addEventListener("click", close);
   overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
@@ -929,9 +997,38 @@ function chatSend(q) {
 }
 
 async function botMatchAnswer(profile) {
+  var live = $("#chatLive");
+  function say(t) { if (live) live.textContent = t; }
+
+  ["nadia", "milo", "priya", "sasha", "callum"].forEach(function (k) { setNode(k, null, "Idle"); });
+  if (live) live.classList.add("working");
+  say("Nadia is querying the live Google Drive catalog\u2026");
+  setNode("nadia", "active", "Querying");
+
   var catalog = await fetchCatalog();
+  setNode("nadia", "done", "Done");
   var nadia = nadiaResearch(catalog, profile);
+
+  setNode("milo", "active", "Scoring");
+  await sleep(320);
+  setNode("milo", "done", "Done");
   var scored = miloDesign(nadia.eligible, profile);
+
+  setNode("priya", "active", "Building");
+  await sleep(320);
+  setNode("priya", "done", "Done");
+
+  setNode("sasha", "active", "Writing");
+  await sleep(320);
+  setNode("sasha", "done", "Done");
+
+  setNode("callum", "active", "Reviewing");
+  await sleep(320);
+  setNode("callum", "done", "Done");
+
+  say("Live catalog queried at " + new Date().toLocaleTimeString() + " \u2014 " + nadia.total + " policies, " + nadia.eligible.length + " eligible for your profile.");
+  if (live) live.classList.remove("working");
+
   if (!scored.length) {
     return whoTag("Callum") + " Nothing in the live catalog fits that profile well right now. That is a real gap, not a missing feature. Try widening the budget or age range.";
   }
@@ -1008,12 +1105,389 @@ function initWaitlist() {
 }
 
 /* --------------------------------------------------------------------------
-   Boot enhancements
+   Typewriter hero (index)
    -------------------------------------------------------------------------- */
-initFlipIcons();
+function initTypewriter() {
+  var el = $("#typeLine");
+  if (!el) return;
+  var phrases = [
+    "Insurance matched to your life, not sorted by price.",
+    "Five agents. One live catalog. Zero fine print left unread.",
+    "Describe your life once. The team does the rest.",
+    "Two to four policies, each with a plain reason it fits you."
+  ];
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    el.textContent = phrases[0];
+    return;
+  }
+  var pi = 0, ci = 0, deleting = false;
+  function tick() {
+    var word = phrases[pi];
+    if (deleting) {
+      ci--;
+      el.textContent = word.slice(0, ci);
+      if (ci === 0) { deleting = false; pi = (pi + 1) % phrases.length; setTimeout(tick, 450); }
+      else setTimeout(tick, 26);
+    } else {
+      ci++;
+      el.textContent = word.slice(0, ci);
+      if (ci === word.length) { deleting = true; setTimeout(tick, 2500); }
+      else setTimeout(tick, 52);
+    }
+  }
+  setTimeout(tick, 450);
+}
+
+/* --------------------------------------------------------------------------
+   Particle network "imaging" behind the hero (index)
+   -------------------------------------------------------------------------- */
+function initParticles(canvas) {
+  if (!canvas || !canvas.getContext) return;
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  var ctx = canvas.getContext("2d");
+  var W = 0, H = 0, dots = [], raf = null;
+  var DPR = Math.min(2, window.devicePixelRatio || 1);
+  function size() {
+    W = canvas.clientWidth || window.innerWidth;
+    H = canvas.clientHeight || 620;
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    var n = Math.max(30, Math.min(90, Math.floor(W / 26)));
+    dots = [];
+    for (var i = 0; i < n; i++) {
+      dots.push({
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+        r: 0.6 + Math.random() * 1.4
+      });
+    }
+  }
+  function tick() {
+    ctx.clearRect(0, 0, W, H);
+    for (var i = 0; i < dots.length; i++) {
+      var d = dots[i];
+      d.x += d.vx; d.y += d.vy;
+      if (d.x < 0 || d.x > W) d.vx *= -1;
+      if (d.y < 0 || d.y > H) d.vy *= -1;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(239,237,230,0.5)";
+      ctx.fill();
+      for (var j = i + 1; j < dots.length; j++) {
+        var o = dots[j];
+        var dx = d.x - o.x, dy = d.y - o.y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(d.x, d.y);
+          ctx.lineTo(o.x, o.y);
+          ctx.strokeStyle = "rgba(214,211,200," + (0.22 * (1 - dist / 120)) + ")";
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
+        }
+      }
+    }
+    raf = requestAnimationFrame(tick);
+  }
+  window.addEventListener("resize", size);
+  size();
+  raf = requestAnimationFrame(tick);
+}
+
+/* --------------------------------------------------------------------------
+   Fullscreen menu (mobile header button, injected by shell.js)
+   -------------------------------------------------------------------------- */
+function initMenu() {
+  var cta = $("#menuCta"), menu = $("#siteMenu");
+  if (!cta || !menu) return;
+  function set(open) {
+    menu.classList.toggle("open", open);
+    menu.setAttribute("aria-hidden", String(!open));
+    cta.setAttribute("aria-expanded", String(open));
+    cta.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    if (open) {
+      var first = menu.querySelector(".menu-link");
+      if (first) first.focus();
+    } else {
+      cta.focus();
+    }
+  }
+  cta.addEventListener("click", function () { set(!menu.classList.contains("open")); });
+  document.querySelectorAll(".menu-link, .menu-terms a").forEach(function (a) {
+    a.addEventListener("click", function () { set(false); });
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") set(false); });
+}
+
+/* --------------------------------------------------------------------------
+   Custom cursor (pointer: fine only)
+   -------------------------------------------------------------------------- */
+function initCursor() {
+  if (!window.matchMedia || !window.matchMedia("(pointer: fine)").matches) return;
+  var dot = $(".cursor-dot"), ring = $(".cursor-ring");
+  if (!dot || !ring) return;
+  var x = 0, y = 0, rx = 0, ry = 0, raf = null;
+  document.addEventListener("mousemove", function (e) {
+    x = e.clientX; y = e.clientY;
+    dot.style.transform = "translate(" + x + "px," + y + "px)";
+  });
+  function tick() {
+    rx += (x - rx) * 0.16;
+    ry += (y - ry) * 0.16;
+    ring.style.transform = "translate(" + rx + "px," + ry + "px)";
+    raf = requestAnimationFrame(tick);
+  }
+  raf = requestAnimationFrame(tick);
+  document.querySelectorAll("a, button, .flip-card, .value-card, input, select, .chip, .cover-mini").forEach(function (el) {
+    el.addEventListener("mouseenter", function () { document.body.classList.add("cursor-hover"); });
+    el.addEventListener("mouseleave", function () { document.body.classList.remove("cursor-hover"); });
+  });
+}
+
+/* --------------------------------------------------------------------------
+   Sound toggle (very quiet ambient hum) + scroll-to-top
+   -------------------------------------------------------------------------- */
+function initSound() {
+  var btn = $("#soundBtn"), cv = $("#soundCanvas");
+  if (!btn || !cv) return;
+  var AC = window.AudioContext || window.webkitAudioContext;
+  var ctx = null, playing = false, nodes = null;
+  var cctx = cv.getContext("2d");
+  function draw(on) {
+    cctx.clearRect(0, 0, 28, 28);
+    var t = Date.now() / 1000;
+    for (var i = 0; i < 5; i++) {
+      var v = on ? (0.5 + 0.5 * Math.sin(t * 4 + i * 1.3)) : 0.12;
+      var h = Math.round(2 + v * 14);
+      cctx.fillStyle = on ? "#F2F0E9" : "rgba(214,211,200,0.45)";
+      cctx.fillRect(3 + i * 5, 26 - h, 3, h);
+    }
+  }
+  function start() {
+    if (!AC) return;
+    ctx = ctx || new AC();
+    if (ctx.state === "suspended") ctx.resume();
+    var g = ctx.createGain(); g.gain.value = 0.04;
+    var o1 = ctx.createOscillator(); o1.type = "sine"; o1.frequency.value = 196;
+    var o2 = ctx.createOscillator(); o2.type = "triangle"; o2.frequency.value = 294;
+    var lfo = ctx.createOscillator(); lfo.frequency.value = 0.12;
+    var lg = ctx.createGain(); lg.gain.value = 90;
+    lfo.connect(lg); lg.connect(o1.frequency);
+    o1.connect(g); o2.connect(g); g.connect(ctx.destination);
+    o1.start(); o2.start(); lfo.start();
+    nodes = { g: g, o1: o1, o2: o2, lfo: lfo };
+    playing = true;
+    btn.classList.add("is-on");
+    btn.setAttribute("aria-pressed", "true");
+  }
+  function stop() {
+    if (nodes) {
+      try { nodes.o1.stop(); nodes.o2.stop(); nodes.lfo.stop(); nodes.g.disconnect(); } catch (e) {}
+      nodes = null;
+    }
+    playing = false;
+    btn.classList.remove("is-on");
+    btn.setAttribute("aria-pressed", "false");
+  }
+  btn.addEventListener("click", function () {
+    if (playing) stop(); else start();
+    draw(playing);
+  });
+  draw(false);
+}
+
+function initScrollTop() {
+  var b = $("#scrollTop");
+  if (!b) return;
+  b.addEventListener("click", function () {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+}
+
+/* --------------------------------------------------------------------------
+   Providers catalogue (booking.com-style, live from the Google Sheet)
+   -------------------------------------------------------------------------- */
+function starsStr(rating) {
+  var full = Math.max(0, Math.min(5, Math.round(rating || 0)));
+  var s = "";
+  for (var i = 0; i < 5; i++) s += i < full ? "\u2605" : "\u2606";
+  return s;
+}
+
+function initProviders() {
+  var grid = $("#providersGrid");
+  if (!grid) return;
+  var typeSel = $("#provType"), regionSel = $("#provRegion"), sortSel = $("#provSort"), count = $("#provCount");
+  var all = [];
+
+  function render() {
+    var t = typeSel ? typeSel.value : "All";
+    var r = regionSel ? regionSel.value : "All";
+    var s = sortSel ? sortSel.value : "rating";
+    var list = all.filter(function (p) {
+      if (t !== "All" && p.insurance_type !== t) return false;
+      if (r !== "All" && p.region !== "EU-Wide" && p.region !== r) return false;
+      return true;
+    });
+    list.sort(function (a, b) {
+      if (s === "priceLow") return (a.monthly_premium_eur || 1e9) - (b.monthly_premium_eur || 1e9);
+      if (s === "priceHigh") return (b.monthly_premium_eur || 0) - (a.monthly_premium_eur || 0);
+      if (s === "cover") return (b.coverage_amount_eur || 0) - (a.coverage_amount_eur || 0);
+      return (b.rating_out_of_5 || 0) - (a.rating_out_of_5 || 0);
+    });
+    if (count) count.textContent = list.length + (list.length === 1 ? " policy" : " policies") + " of " + all.length + " \u00b7 live";
+    grid.innerHTML = "";
+    if (!list.length) {
+      grid.innerHTML = '<div class="empty-state"><h3>Nothing matches these filters</h3><p>The live catalog has no policies for that combination. Widen the filters to see everything that is actually published.</p></div>';
+      return;
+    }
+    list.forEach(function (p) {
+      var el = document.createElement("article");
+      el.className = "prov-card";
+      var feats = (p.key_features || "").split(";").map(function (s2) { return s2.trim(); }).filter(Boolean).slice(0, 4);
+      var rating = p.rating_out_of_5 || 0;
+      var rev = Math.round(rating * 9) + 8;
+      var age = (isFinite(p.min_age) && isFinite(p.max_age)) ? p.min_age + "\u2013" + p.max_age : "any";
+      el.innerHTML =
+        "<div>" +
+          '<div class="prov-head"><h3>' + esc(p.policy_name) + '</h3><span class="prov-type">' + esc(p.insurance_type) + "</span></div>" +
+          '<p class="prov-name">' + esc(p.provider_name) + " &middot; " + esc(p.region) + " &middot; ages " + age + "</p>" +
+          '<div class="prov-meta">' +
+            '<span class="prov-rating"><b>' + rating.toFixed(1) + '</b><span class="prov-stars" aria-label="' + rating.toFixed(1) + ' out of 5">' + starsStr(rating) + '</span><span class="prov-reviews">(' + rev + " sample reviews)</span></span>" +
+            '<span class="prov-tag">' + esc(p.target_life_stage) + "</span>" +
+          "</div>" +
+          (feats.length ? '<ul class="prov-features">' + feats.map(function (f) { return "<li>" + esc(f) + "</li>"; }).join("") + "</ul>" : "") +
+          (p.exclusions ? '<p class="prov-excl"><b>Exclusions:</b> ' + esc(p.exclusions) + "</p>" : "") +
+        "</div>" +
+        '<div class="prov-side">' +
+          '<div class="prov-price"><span class="prov-price-label">From</span><b>' + money(p.monthly_premium_eur) + '</b><span class="pp">/month</span></div>' +
+          '<div class="prov-stats">' +
+            "<div><span>Cover</span><b>" + money(p.coverage_amount_eur) + "</b></div>" +
+            "<div><span>Excess</span><b>" + money(p.deductible_eur) + "</b></div>" +
+            "<div><span>Age</span><b>" + age + "</b></div>" +
+            "<div><span>Rating</span><b>" + rating.toFixed(1) + "/5</b></div>" +
+          "</div>" +
+          '<p class="prov-note">Live catalog &middot; ' + esc(p.policy_id) + " &middot; updated " + esc(p.last_updated || "n/a") + "</p>" +
+        "</div>";
+      grid.appendChild(el);
+    });
+  }
+
+  function fillSelect(sel, values) {
+    if (!sel) return;
+    values.forEach(function (v) {
+      var opt = document.createElement("option");
+      opt.value = v; opt.textContent = v;
+      sel.appendChild(opt);
+    });
+  }
+
+  fetchCatalog().then(function (catalog) {
+    all = catalog;
+    var types = [];
+    var regions = [];
+    catalog.forEach(function (p) {
+      if (p.insurance_type && types.indexOf(p.insurance_type) === -1) types.push(p.insurance_type);
+      if (p.region && regions.indexOf(p.region) === -1) regions.push(p.region);
+    });
+    types.sort(); regions.sort();
+    fillSelect(typeSel, types);
+    fillSelect(regionSel, regions);
+    render();
+  }).catch(function () {
+    grid.innerHTML = '<div class="empty-state"><h3>Live catalog unreachable</h3><p>This page never fakes a catalogue. The Google Drive sheet could not be reached; try again in a moment.</p></div>';
+    if (count) count.textContent = "offline";
+  });
+
+  [typeSel, regionSel, sortSel].forEach(function (sel) {
+    if (sel) sel.addEventListener("change", render);
+  });
+}
+
+/* --------------------------------------------------------------------------
+   Loading sequence (short, cinematic) + Lenis smooth scroll + parallax
+   -------------------------------------------------------------------------- */
+function initLoader() {
+  var loader = $("#loader");
+  if (!loader) return;
+  var count = $("#loaderCount"), bar = $("#loaderBar");
+  if (!count || !bar) { loader.classList.add("done"); return; }
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var done = false;
+  function finish() {
+    if (done) return;
+    done = true;
+    loader.classList.add("done");
+    setTimeout(function () { if (loader.parentNode) loader.parentNode.removeChild(loader); }, 600);
+  }
+  if (reduced) { finish(); return; }
+  var t0 = performance.now(), dur = 900;
+  function step(now) {
+    var p = Math.min(1, (now - t0) / dur);
+    var n = Math.floor(p * 100);
+    count.textContent = String(n).padStart(2, "0");
+    if (bar) bar.style.width = p * 100 + "%";
+    if (p < 1) requestAnimationFrame(step);
+    else finish();
+  }
+  requestAnimationFrame(step);
+}
+
+function initLenis() {
+  if (!window.matchMedia || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  var src = "https://unpkg.com/lenis@1.1.14/dist/lenis.min.js";
+  if (window.Lenis) { startLenis(); return; }
+  var s = document.createElement("script");
+  s.src = src;
+  s.onload = startLenis;
+  document.head.appendChild(s);
+  function startLenis() {
+    if (!window.Lenis) return;
+    var lenis = new window.Lenis({ duration: 1.15, smoothWheel: true, easing: function (t) { return 1 - Math.pow(1 - t, 4); } });
+    function raf(t) { lenis.raf(t); requestAnimationFrame(raf); }
+    requestAnimationFrame(raf);
+  }
+}
+
+function initParallax() {
+  var layers = document.querySelectorAll("[data-parallax]");
+  if (!layers.length) return;
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  var ticking = false;
+  function update() {
+    var y = window.scrollY;
+    layers.forEach(function (el) {
+      var s = parseFloat(el.getAttribute("data-parallax")) || 0;
+      el.style.transform = "translate3d(0, " + (y * s) + "px, 0)";
+    });
+    ticking = false;
+  }
+  window.addEventListener("scroll", function () {
+    if (!ticking) { ticking = true; requestAnimationFrame(update); }
+  }, { passive: true });
+  update();
+}
+
+/* --------------------------------------------------------------------------
+   Boot (guarded: each module only starts where its page markup exists)
+   -------------------------------------------------------------------------- */
+if (document.querySelector(".flip-icon")) initFlipIcons();
 initReveal();
-initPersonas();
-initPreviews();
+if (document.querySelector("[data-persona]")) initPersonas();
+if (document.querySelector(".pv[data-preview]")) initPreviews();
 initWaves($("#heroWaves"));
-initChat();
-initWaitlist();
+if ($("#chatForm")) initChat();
+if ($("#waitlistForm")) initWaitlist();
+if ($("#typeLine")) initTypewriter();
+if ($("#bgCanvas")) initParticles($("#bgCanvas"));
+if ($("#providersGrid")) initProviders();
+if ($("#intakeForm")) initIntake();
+if (document.querySelector(".node")) initNodes();
+initMenu();
+initCursor();
+initSound();
+initScrollTop();
+initLoader();
+initLenis();
+initParallax();
