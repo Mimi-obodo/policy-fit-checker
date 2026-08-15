@@ -6,6 +6,12 @@
 (function () {
   "use strict";
 
+  /* Theme (dark default / light), applied before first paint to avoid a flash */
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem("pfc-theme"); } catch (e) {}
+  var theme = savedTheme === "light" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", theme);
+
   var current = (location.pathname.split("/").pop() || "index.html").toLowerCase();
 
   var PAGES = [
@@ -24,8 +30,10 @@
     return current === href || (href === "index.html" && current === "");
   }
 
-  function navLinks(cls) {
-    return PAGES.map(function (p) {
+  function navLinks(cls, skipMatch) {
+    return PAGES.filter(function (p) {
+      return !(skipMatch && p.href === "match.html");
+    }).map(function (p) {
       return '<a href="' + p.href + '" class="' + cls + '"' + (isActive(p.href) ? ' aria-current="page"' : "") + ">" + p.label + "</a>";
     }).join("");
   }
@@ -49,13 +57,20 @@
   var header =
     '<a class="skip-link" href="#main">Skip to content</a>' +
     '<header class="site-header">' +
-      '<a class="wordmark" href="index.html" aria-label="Policy Fit Checker home">' +
-        '<span class="wordmark-mark">PFC</span><span>Policy Fit Checker</span>' +
-      "</a>" +
+      '<div class="site-brand">' +
+        '<a class="wordmark" href="index.html" aria-label="Policy Fit Checker home">' +
+          '<span class="wordmark-mark">PFC</span><span>Policy Fit Checker</span>' +
+        "</a>" +
+        '<span class="header-visual" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>' +
+      "</div>" +
       '<nav class="site-nav" aria-label="Primary">' +
-        navLinks("nav-link") +
+        navLinks("nav-link", true) +
         '<a class="nav-cta" href="match.html">Find your fit</a>' +
       "</nav>" +
+      '<button type="button" class="theme-btn" id="themeBtn" aria-pressed="false" aria-label="Switch theme">' +
+        '<svg class="theme-icon theme-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg>' +
+        '<svg class="theme-icon theme-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>' +
+      "</button>" +
       '<button type="button" class="menu-cta" id="menuCta" aria-expanded="false" aria-controls="siteMenu" aria-label="Open menu">' +
         '<span class="menu-cta-text">Menu</span>' +
         '<span class="dots-w" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>' +
@@ -80,13 +95,29 @@
 
   var footer =
     '<footer class="site-footer" id="contact">' +
-      '<nav class="footer-nav" aria-label="Footer">' +
-        navLinks("footer-link") +
-      "</nav>" +
-      "<p>Policy Fit Checker: five-agent pipeline, live Google Sheets catalog, static GitHub Pages.</p>" +
-      '<p class="footer-meta">PFC is a fictional company built for an academic project. No real insurance is sold, and no real financial advice is given.</p>' +
-      '<p class="footer-meta"><a href="https://github.com/Mimi-obodo/policy-fit-checker" rel="noopener">github.com/Mimi-obodo/policy-fit-checker</a> &middot; <a href="mailto:hello@pfc.example">hello@pfc.example</a> (placeholder)</p>' +
-      '<p class="footer-meta">No secrets here. Everything this page needs is fetched client-side at the moment of use.</p>' +
+      '<div class="footer-inner">' +
+        '<div class="footer-brand">' +
+          '<span class="footer-mark">PFC</span>' +
+          '<div class="footer-brand-txt">' +
+            "<b>Policy Fit Checker</b>" +
+            "<p>Five-agent pipeline, live Google Sheets catalog, static GitHub Pages.</p>" +
+          "</div>" +
+        "</div>" +
+        '<nav class="footer-nav" aria-label="Footer">' +
+          navLinks("footer-link") +
+        "</nav>" +
+      "</div>" +
+      '<div class="footer-legal">' +
+        "<span>\u00a9 2026 Policy Fit Checker</span>" +
+        '<span class="footer-sep" aria-hidden="true">\u00b7</span>' +
+        "<span>Academic project \u2014 no insurance is sold, no real financial advice is given</span>" +
+        '<span class="footer-sep" aria-hidden="true">\u00b7</span>' +
+        '<a href="https://github.com/Mimi-obodo/policy-fit-checker" rel="noopener">GitHub</a>' +
+        '<span class="footer-sep" aria-hidden="true">\u00b7</span>' +
+        '<a href="mailto:hello@pfc.example">Contact</a>' +
+        '<span class="footer-sep" aria-hidden="true">\u00b7</span>' +
+        '<a href="principles.html">Principles</a>' +
+      "</div>" +
     "</footer>";
 
   var loader =
@@ -96,11 +127,37 @@
       '<div class="loader-bar" aria-hidden="true"><span id="loaderBar"></span></div>' +
     "</div>";
 
+  var chatbot =
+    '<button type="button" class="chatbot-fab" id="cbFab" aria-expanded="false" aria-controls="cbPanel" aria-label="Chat with the five agents">' +
+      '<span class="cb-fab-ring" aria-hidden="true"></span>' +
+      '<svg class="cb-fab-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M12 3l1.6 4.6L18 9l-4.4 1.4L12 15l-1.6-4.6L6 9l4.4-1.4z"/><path d="M18.5 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>' +
+      "</svg>" +
+      '<span class="cb-fab-label" aria-hidden="true">Talk to the team</span>' +
+    "</button>" +
+    '<div class="chatbot-panel" id="cbPanel" role="dialog" aria-modal="false" aria-label="Chat with the five agents" aria-hidden="true" hidden>' +
+      '<div class="cb-head">' +
+        '<span class="cb-head-mark">PFC</span>' +
+        '<div class="cb-head-txt"><b>Policy Fit Checker</b><span class="cb-head-sub"><span class="cb-live-dot" aria-hidden="true"></span> five agents &middot; live catalog</span></div>' +
+        '<button type="button" class="cb-close" id="cbClose" aria-label="Close chat">&times;</button>' +
+      "</div>" +
+      '<div class="cb-agents" id="cbAgents" role="group" aria-label="Choose an agent"></div>' +
+      '<div class="cb-log" id="cbLog" tabindex="0" aria-live="polite"></div>' +
+      '<div class="cb-suggestions" id="cbSuggestions" aria-label="Suggested questions"></div>' +
+      '<form class="cb-form" id="cbForm">' +
+        '<input id="cbInput" type="text" autocomplete="off" placeholder="Ask the team anything, e.g. which policy fits a family in Ireland" aria-label="Message the team">' +
+        '<button type="submit" class="cb-send" aria-label="Send">' +
+          '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m0 0-6 6m6-6 6 6"/></svg>' +
+        "</button>" +
+      "</form>" +
+      '<p class="cb-note">Free text or guided options \u2014 the team always queries the live catalog.<br><a href="chat.html">Open the full chat page</a></p>' +
+    "</div>";
+
   function inject() {
     var b = document.body;
     if (!b) return;
     b.insertAdjacentHTML("afterbegin", loader + cursor + header + buttons);
-    b.insertAdjacentHTML("beforeend", footer);
+    b.insertAdjacentHTML("beforeend", footer + chatbot);
     var main = document.querySelector("main");
     if (main) main.setAttribute("id", "main");
   }

@@ -488,7 +488,7 @@ function renderResults(built, copy, verdict) {
       $("#resultCards").appendChild(el);
     });
   }
-  res.scrollIntoView({ behavior: "smooth", block: "start" });
+  smoothScrollTo(res);
 }
 
 /* --------------------------------------------------------------------------
@@ -605,7 +605,7 @@ function finishAndRun() {
     region: answers.region
   };
   var p = $("#pipeline");
-  p.scrollIntoView({ behavior: "smooth", block: "center" });
+  smoothScrollTo(p);
   runPipeline(profile);
 }
 
@@ -630,7 +630,7 @@ function initIntake() {
   $("#stepBack").addEventListener("click", function () { if (stepIdx > 0) setStep(stepIdx - 1); });
   var again = $("#runAgain");
   if (again) again.addEventListener("click", function () {
-    $("#intake").scrollIntoView({ behavior: "smooth", block: "start" });
+    smoothScrollTo($("#intake"));
     setStep(0);
   });
 }
@@ -1046,19 +1046,40 @@ async function botAnswer(q) {
   var t = q.toLowerCase();
   function has(words) { return words.some(function (w) { return t.indexOf(w) !== -1; }); }
 
+  /* Parse age / region / budget out of free text so the agents can act on it */
+  var m;
+  var budget = null;
+  m = t.match(/(\d{2,4})\s*(?:eur|euros?|€|a month|per month|monthly)/);
+  if (!m) m = t.match(/(?:€|eur|euros?|a month|per month|monthly)\s*(\d{2,4})/);
+  if (m) budget = parseInt(m[1], 10);
+  var age = null;
+  m = t.match(/age\s*(\d{1,2})/) || t.match(/(\d{1,2})\s*(?:years?\s*old|yrs?\s*old|years?\b)/) || t.match(/under\s*(\d{1,2})\s*(?!a month|per month)/);
+  if (m) age = parseInt(m[1], 10);
+  var region = "Any";
+  if (has(["ireland", "irish"])) region = "Ireland";
+  else if (has(["uk", "britain", "british", "england", "scotland"])) region = "UK";
+
   var profile = null;
-  if (has(["student", "school", "university", "college", "under 26", "22"])) {
-    profile = { stage: "Student", age: 22, dependants: "None", condition: "None", budget: 40, region: "Any" };
-  } else if (has(["senior", "retir", "over 60", "60+"])) {
-    profile = { stage: "Senior", age: 68, dependants: "None", condition: "None", budget: 60, region: "Any" };
+  if (has(["student", "school", "university", "college", "campus"])) {
+    profile = { stage: "Student", age: age || 22, dependants: "None", condition: "None", budget: budget || 40, region: region };
+  } else if (has(["self-employed", "freelance", "independent", "own business"])) {
+    profile = { stage: "Self-Employed", age: age || 38, dependants: "None", condition: "None", budget: budget || 70, region: region };
+  } else if (has(["young professional", "just started working", "single, working"])) {
+    profile = { stage: "Young Professional", age: age || 28, dependants: "None", condition: "None", budget: budget || 50, region: region };
+  } else if (has(["senior", "retir", "over 60", "60+", "pension"])) {
+    profile = { stage: "Senior", age: age || 68, dependants: "None", condition: "None", budget: budget || 60, region: region };
   } else if (has(["pre-existing", "chronic", "diabetes", "asthma", "condition", "health"])) {
-    profile = { stage: "Chronic Condition Management", age: 45, dependants: "None", condition: "Chronic condition", budget: 50, region: "Any" };
-  } else if (has(["family", "children", "kids", "new parent", "dependants"])) {
-    profile = { stage: "New Parent", age: 32, dependants: "Children", condition: "None", budget: 60, region: "Any" };
+    profile = { stage: "Chronic Condition Management", age: age || 45, dependants: "None", condition: "Chronic condition", budget: budget || 50, region: region };
+  } else if (has(["family", "children", "kids", "new parent", "dependants", "baby", "parent"])) {
+    profile = { stage: "New Parent", age: age || 32, dependants: "Children", condition: "None", budget: budget || 60, region: region };
   }
 
-  if (profile && has(["policy", "fit", "which", "best", "recommend", "match", "premium", "price", "plan", "cover", "suit"])) {
+  var asksForMatch = has(["policy", "fit", "which", "best", "recommend", "match", "premium", "price", "plan", "cover", "suit", "condition", "exclusion", "excess", "deductible"]);
+  if (profile && asksForMatch) {
     return await botMatchAnswer(profile);
+  }
+  if (has(["premium", "price", "cost", "calculate", "priced"])) {
+    return whoTag("Milo") + " Pricing is not guessed here. Every premium on a card is the live monthly_premium_eur field in the catalog. My budget weight (20/100) checks it against the budget you told us \u2014 if a policy exceeds it, its score drops proportionally. No private comparison table, no markup.";
   }
 
   if (has(["nadia"])) return whoTag("Nadia") + " I query the published catalog live at the moment of your question, no cached numbers. Give me a stage, age, region and budget and I will tell you what is really there, gaps included.";
@@ -1068,7 +1089,7 @@ async function botAnswer(q) {
   if (has(["callum", "manager", "team", "orchestrat"])) return whoTag("Callum") + " I review every handoff: Nadia researched it, Milo scored it, Priya built it, Sasha explained it. My job is the final judgement, and the honest empty state when nothing fits.";
   if (has(["hello", "hi", "hey", "who are", "what can"])) return whoTag("Callum") + " Hello. I am Callum, the manager of the team. Ask me which policy fits a student, what data we use, or how we treat pre-existing conditions, or name an agent and I will route you.";
   if (has(["data", "source", "where", "how do you know"])) return whoTag("Priya") + " All policy data is pulled live from a published Google Sheet catalog at the moment of use. This page holds no hardcoded premiums or names. Static text around it, like the education notes, is clearly our own writing, not catalog data.";
-  return whoTag("Callum") + " I heard you, though the question does not yet point at anything specific. I am best at policy fits, the data we use, or one of the five of us by name. Try \u201cwhich policy fits a student in Ireland\u201d, or ask Sasha to explain an exclusion.";
+  return whoTag("Callum") + " I heard you, though the question does not yet point at anything specific. I am best at policy fits, the data we use, or one of the five of us by name. Try \u201cwhich policy fits a student in Ireland under 40 a month\u201d, or ask Sasha to explain an exclusion.";
 }
 
 function initChat() {
@@ -1083,6 +1104,142 @@ function initChat() {
   document.querySelectorAll(".chip").forEach(function (c) {
     c.addEventListener("click", function () { chatSend(c.getAttribute("data-q")); });
   });
+}
+
+/* --------------------------------------------------------------------------
+   Floating chatbot widget (every page, injected by shell.js)
+   Free text or guided options; the agents always query the live catalog.
+   -------------------------------------------------------------------------- */
+function initChatbot() {
+  var fab = $("#cbFab"), panel = $("#cbPanel");
+  if (!fab || !panel) return;
+
+  var AGENTS = [
+    { key: "nadia", name: "Nadia" },
+    { key: "milo", name: "Milo" },
+    { key: "priya", name: "Priya" },
+    { key: "sasha", name: "Sasha" },
+    { key: "callum", name: "Callum" }
+  ];
+  var INTRO = {
+    nadia: "Nadia, tell me what you research and how you query the live catalog",
+    milo: "Milo, explain your scoring model",
+    priya: "Priya, how do you build the shortlist cards?",
+    sasha: "Sasha, why do you explain things in plain language?",
+    callum: "Callum, how do you manage the team?"
+  };
+  var QUICK = [
+    "Which policy fits a student in Ireland under 40 a month?",
+    "How do you handle pre-existing conditions?",
+    "What data do you use to match me?",
+    "Explain how my premium is calculated"
+  ];
+
+  var agents = $("#cbAgents"), suggestions = $("#cbSuggestions"), log = $("#cbLog");
+  var form = $("#cbForm"), input = $("#cbInput");
+
+  AGENTS.forEach(function (a) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "cb-agent";
+    b.innerHTML = '<span class="cb-agent-n">' + a.key.charAt(0).toUpperCase() + "</span> " + a.name;
+    b.title = "Ask " + a.name + " what they do";
+    b.addEventListener("click", function () { open(); send(INTRO[a.key]); });
+    agents.appendChild(b);
+  });
+  QUICK.forEach(function (q) {
+    var c = document.createElement("button");
+    c.type = "button";
+    c.className = "chip";
+    c.textContent = q;
+    c.addEventListener("click", function () { send(q); });
+    suggestions.appendChild(c);
+  });
+
+  function addLine(cls, html) {
+    var el = document.createElement("p");
+    el.className = "chat-line " + cls;
+    el.innerHTML = html;
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function open() {
+    var firstOpen = !log.children.length;
+    panel.classList.add("open");
+    panel.removeAttribute("hidden");
+    panel.setAttribute("aria-hidden", "false");
+    fab.setAttribute("aria-expanded", "true");
+    if (firstOpen) {
+      addLine("bot", whoTag("Callum") + " Hello, I am Callum. Ask us anything in plain words \u2014 which policy fits a family in Ireland, what an excess means, how we score, or talk to Nadia, Milo, Priya, Sasha or me by name. The team queries the live catalog every single time.");
+    }
+    input.focus();
+  }
+  function close() {
+    panel.classList.remove("open");
+    panel.setAttribute("aria-hidden", "true");
+    fab.setAttribute("aria-expanded", "false");
+    fab.focus();
+  }
+
+  fab.addEventListener("click", function () {
+    if (panel.classList.contains("open")) close(); else open();
+  });
+  var closeBtn = $("#cbClose");
+  if (closeBtn) closeBtn.addEventListener("click", close);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && panel.classList.contains("open")) close();
+  });
+
+  var busy = false;
+  function send(q) {
+    q = String(q).trim();
+    if (!q || busy) return;
+    addLine("user", esc(q));
+    busy = true;
+    var typing = document.createElement("p");
+    typing.className = "chat-line typing";
+    typing.textContent = "The team is thinking\u2026";
+    log.appendChild(typing);
+    log.scrollTop = log.scrollHeight;
+    botAnswer(q).then(function (reply) {
+      typing.remove();
+      addLine("bot", reply);
+      busy = false;
+    }).catch(function () {
+      typing.remove();
+      addLine("bot", whoTag("Callum") + " Something interrupted the live query. I will not invent an answer; try again in a moment.");
+      busy = false;
+    });
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var q = input.value.trim();
+    if (!q) return;
+    input.value = "";
+    send(q);
+  });
+}
+
+/* --------------------------------------------------------------------------
+   Theme toggle (dark / light)
+   -------------------------------------------------------------------------- */
+function initTheme() {
+  var btn = $("#themeBtn");
+  if (!btn) return;
+  function paint() {
+    var t = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+    btn.setAttribute("aria-pressed", t === "light");
+    btn.setAttribute("aria-label", t === "light" ? "Switch to dark theme" : "Switch to light theme");
+  }
+  btn.addEventListener("click", function () {
+    var next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("pfc-theme", next); } catch (e) {}
+    paint();
+  });
+  paint();
 }
 
 /* --------------------------------------------------------------------------
@@ -1301,7 +1458,8 @@ function initScrollTop() {
   var b = $("#scrollTop");
   if (!b) return;
   b.addEventListener("click", function () {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (window.__lenis) window.__lenis.scrollTo(0, { duration: 1.1 });
+    else window.scrollTo({ top: 0, behavior: "smooth" });
   });
 }
 
@@ -1436,17 +1594,46 @@ function initLoader() {
 
 function initLenis() {
   if (!window.matchMedia || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  var src = "https://unpkg.com/lenis@1.1.14/dist/lenis.min.js";
   if (window.Lenis) { startLenis(); return; }
-  var s = document.createElement("script");
-  s.src = src;
-  s.onload = startLenis;
-  document.head.appendChild(s);
+  var urls = [
+    "https://unpkg.com/lenis@1.1.14/dist/lenis.min.js",
+    "https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"
+  ];
+  var i = 0;
+  function next() {
+    if (i >= urls.length) return;
+    var s = document.createElement("script");
+    s.src = urls[i++];
+    s.onload = startLenis;
+    s.onerror = next;
+    document.head.appendChild(s);
+  }
+  next();
   function startLenis() {
-    if (!window.Lenis) return;
-    var lenis = new window.Lenis({ duration: 1.15, smoothWheel: true, easing: function (t) { return 1 - Math.pow(1 - t, 4); } });
-    function raf(t) { lenis.raf(t); requestAnimationFrame(raf); }
-    requestAnimationFrame(raf);
+    try {
+      if (!window.Lenis) return;
+      window.__lenis = new window.Lenis({
+        duration: 1.15,
+        smoothWheel: true,
+        easing: function (t) { return 1 - Math.pow(1 - t, 4); }
+      });
+      document.querySelectorAll("#chatLog, #cbLog, .persona-overlay, .intake, .results").forEach(function (el) {
+        el.setAttribute("data-lenis-prevent", "");
+      });
+      function raf(t) { if (window.__lenis) window.__lenis.raf(t); requestAnimationFrame(raf); }
+      requestAnimationFrame(raf);
+    } catch (e) {
+      window.__lenis = null;
+    }
+  }
+}
+
+function smoothScrollTo(el) {
+  if (!el) return;
+  if (window.__lenis) {
+    window.__lenis.scrollTo(el, { offset: -72, duration: 1.1 });
+  } else {
+    try { el.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) { el.scrollIntoView(true); }
   }
 }
 
@@ -1491,3 +1678,5 @@ initScrollTop();
 initLoader();
 initLenis();
 initParallax();
+initTheme();
+initChatbot();
