@@ -1283,16 +1283,16 @@ function initTypewriter() {
     if (deleting) {
       ci--;
       el.textContent = word.slice(0, ci);
-      if (ci === 0) { deleting = false; pi = (pi + 1) % phrases.length; setTimeout(tick, 450); }
-      else setTimeout(tick, 26);
+      if (ci === 0) { deleting = false; pi = (pi + 1) % phrases.length; setTimeout(tick, 700); }
+      else setTimeout(tick, 62);
     } else {
       ci++;
       el.textContent = word.slice(0, ci);
-      if (ci === word.length) { deleting = true; setTimeout(tick, 2500); }
-      else setTimeout(tick, 52);
+      if (ci === word.length) { deleting = true; setTimeout(tick, 3500); }
+      else setTimeout(tick, 118);
     }
   }
-  setTimeout(tick, 450);
+  setTimeout(tick, 700);
 }
 
 /* --------------------------------------------------------------------------
