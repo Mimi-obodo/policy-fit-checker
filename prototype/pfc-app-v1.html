@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Policy Fit Checker</title>
+<style>
+  :root {
+    --bg: #09090b;
+    --bg2: #0d0d10;
+    --panel: #101013;
+    --panel2: #17171b;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.14);
+    --text: #fafafa;
+    --muted: #a1a1aa;
+    --accent: #8b7cf8;
+    --accent2: #4da3ff;
+    --green: #4ade80;
+    --yellow: #facc15;
+    --red: #f87171;
+    --amber: #fb923c;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: dark; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(600px 300px at 20% -5%, rgba(139,124,248,.14), transparent 70%),
+      radial-gradient(700px 350px at 90% -10%, rgba(77,163,255,.12), transparent 70%);
+  }
+  .wrap { position: relative; z-index: 1; max-width: 1220px; margin: 0 auto; padding: 28px 24px 80px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .mark {
+    width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    box-shadow: 0 4px 18px rgba(139,124,248,.4);
+  }
+  .mark svg { width: 20px; height: 20px; }
+  .brand h1 { font-size: 20px; letter-spacing: -0.4px; font-weight: 700; }
+  .brand h1 span { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .head-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .live {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--green);
+    background: rgba(74,222,128,.08); border: 1px solid rgba(74,222,128,.25);
+    border-radius: 999px; padding: 5px 13px; font-weight: 600;
+  }
+  .live .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(74,222,128,.5);} 70%{box-shadow:0 0 0 7px rgba(74,222,128,0);} 100%{box-shadow:0 0 0 0 rgba(74,222,128,0);} }
+
+  .glossary summary { cursor: pointer; font-size: 12px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 5px 13px; font-weight: 600; user-select: none; }
+  .glossary summary:hover { color: var(--text); border-color: var(--border-strong); }
+  .glossary[open] summary { color: var(--text); border-color: var(--accent); }
+  .glossary-body { position: absolute; right: 0; top: 42px; z-index: 20; background: var(--panel2); border: 1px solid var(--border-strong); border-radius: 12px; padding: 16px; width: 320px; box-shadow: var(--shadow); }
+  .glossary { position: relative; }
+  .glossary-body dt { font-size: 13px; font-weight: 700; color: var(--text); margin-top: 10px; }
+  .glossary-body dd { font-size: 12px; color: var(--muted); margin-left: 0; }
+  .glossary-body dt:first-child { margin-top: 0; }
+
+  .layout { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 920px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+  .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 14px; font-weight: 600; }
+
+  label { display: block; font-size: 12px; color: var(--muted); margin: 16px 0 6px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+  select, input[type=number] {
+    width: 100%; background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; font-size: 14px; outline: none; transition: border-color .12s ease, box-shadow .12s ease;
+  }
+  select:focus, input[type=number]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(139,124,248,.18); }
+
+  .cond-block { margin-top: 18px; padding: 14px; border: 1px solid rgba(139,124,248,.45); background: rgba(139,124,248,.06); border-radius: 12px; }
+  .cond-block label { margin-top: 0; }
+  .cond-hero { font-size: 9px; letter-spacing: 1px; background: var(--accent); color: #fff; padding: 2px 7px; border-radius: 999px; vertical-align: 2px; margin-left: 6px; font-weight: 800; }
+  .cond-note { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    background: var(--panel2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 999px; padding: 6px 12px; font-size: 12px; cursor: pointer; user-select: none; transition: all .12s ease; font-weight: 500;
+  }
+  .chip:hover { border-color: var(--border-strong); color: var(--text); }
+  .chip.on { background: rgba(139,124,248,.15); border-color: var(--accent); color: #cfc8ff; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; background: var(--panel2); outline: none; }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); cursor: pointer;
+    border: 2px solid var(--bg); box-shadow: 0 0 0 3px rgba(139,124,248,.2);
+  }
+  input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg); }
+  .range-val { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .age-label { color: var(--accent); font-weight: 700; }
+
+  button.primary {
+    width: 100%; margin-top: 20px; border: none; border-radius: 10px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer;
+    color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent2));
+    box-shadow: 0 4px 20px rgba(139,124,248,.35); transition: filter .15s ease, transform .1s ease;
+  }
+  button.primary:hover { filter: brightness(1.12); }
+  button.primary:active { transform: scale(.99); }
+  button.primary:disabled { opacity: .5; cursor: wait; }
+  #status { margin-top: 12px; font-size: 13px; color: var(--muted); }
+
+  .personas { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .persona-btn {
+    flex: 1; min-width: 90px; background: var(--panel2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 10px; padding: 8px 6px; font-size: 11px; cursor: pointer; transition: all .12s ease; font-weight: 600;
+  }
+  .persona-btn:hover { color: var(--text); border-color: var(--accent); background: rgba(139,124,248,.08); }
+  .persona-btn small { display: block; font-weight: 400; color: var(--muted); font-size: 10px; }
+
+  .main-col { display: flex; flex-direction: column; gap: 20px; }
+
+  .results-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+  .results-head h2 { margin: 0; }
+  .results-head .count { color: var(--muted); font-size: 13px; }
+
+  .banner {
+    background: linear-gradient(135deg, rgba(139,124,248,.14), rgba(77,163,255,.10));
+    border: 1px solid rgba(139,124,248,.4); border-radius: var(--radius);
+    padding: 16px 18px; margin-bottom: 16px;
+  }
+  .banner h3 { font-size: 15px; font-weight: 700; }
+  .banner p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .banner .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .btn-sm {
+    background: var(--panel2); border: 1px solid var(--border-strong); color: var(--text);
+    border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .12s ease;
+  }
+  .btn-sm:hover { border-color: var(--accent); background: rgba(139,124,248,.12); }
+  .btn-sm.ghost { color: var(--muted); }
+
+  .legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .legend-item { font-size: 11px; color: var(--muted); background: var(--panel2); border: 1px solid var(--border); border-radius: 999px; padding: 5px 11px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px; display: flex; flex-direction: column; gap: 9px; position: relative; box-shadow: var(--shadow); transition: transform .15s ease, border-color .15s ease;
+  }
+  .card:hover { transform: translateY(-2px); }
+  .card.top { border-color: rgba(74,222,128,.5); }
+  .card.top::before { content: "Best fit"; position: absolute; top: -10px; left: 14px; background: var(--green); color: #052e16; font-size: 10px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; }
+  .score-badge {
+    position: absolute; top: 14px; right: 14px; width: 52px; height: 52px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;
+    background: var(--panel2); border: 2px solid var(--border); color: var(--muted);
+  }
+  .score-badge.high { border-color: var(--green); color: var(--green); }
+  .score-badge.mid { border-color: var(--yellow); color: var(--yellow); }
+  .score-badge.low { border-color: var(--red); color: var(--red); }
+  .card h3 { font-size: 15px; font-weight: 600; padding-right: 62px; letter-spacing: -0.2px; }
+  .provider { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { background: var(--panel2); border: 1px solid var(--border); border-radius: 7px; padding: 3px 9px; font-size: 11px; color: var(--muted); font-weight: 500; }
+  .tag.type { color: #cfc8ff; border-color: rgba(139,124,248,.4); background: rgba(139,124,248,.08); }
+
+  .stance { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; border-radius: 8px; padding: 5px 10px; width: fit-content; }
+  .stance.ok { color: var(--green); background: rgba(74,222,128,.09); border: 1px solid rgba(74,222,128,.35); }
+  .stance.caution { color: var(--yellow); background: rgba(250,204,21,.09); border: 1px solid rgba(250,204,21,.35); }
+  .stance.risk { color: var(--red); background: rgba(248,113,113,.09); border: 1px solid rgba(248,113,113,.35); }
+
+  .price-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .premium { font-size: 22px; font-weight: 800; color: var(--green); letter-spacing: -0.5px; }
+  .premium small { color: var(--muted); font-size: 12px; font-weight: 400; }
+  .price-meta { font-size: 12px; color: var(--muted); }
+  .price-meta b { color: var(--text); }
+  .ob-badge {
+    font-size: 11px; font-weight: 700; color: #fff; background: var(--red); border-radius: 999px; padding: 3px 9px;
+  }
+
+  .features { font-size: 13px; color: var(--muted); }
+  .features li { margin-left: 16px; margin-top: 3px; list-style: none; position: relative; }
+  .features li::before { content: "•"; position: absolute; left: -13px; color: var(--accent); font-weight: 700; }
+
+  .excls { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+  .excls .excl-h { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: var(--red); }
+  .excls li { margin-left: 16px; list-style: none; position: relative; }
+  .excls li::before { content: "✗"; position: absolute; left: -15px; color: var(--red); }
+  .excls mark { background: rgba(248,113,113,.22); color: #fecaca; border-radius: 4px; padding: 0 3px; }
+
+  .why { border-top: 1px solid var(--border); padding-top: 10px; }
+  .why summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent2); user-select: none; }
+  .why summary:hover { color: #fff; }
+  .why-body { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .bar-head { display: flex; justify-content: space-between; font-size: 12px; }
+  .bar-label { font-weight: 600; color: var(--text); }
+  .bar-score { color: var(--muted); font-weight: 600; }
+  .bar-track { height: 7px; background: var(--panel2); border-radius: 4px; overflow: hidden; margin-top: 4px; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 4px; }
+  .bar-reason { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .why-head { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  .verify { font-size: 12px; color: var(--amber); background: rgba(251,146,60,.08); border: 1px solid rgba(251,146,60,.3); border-radius: 8px; padding: 8px 10px; }
+
+  .card-actions { display: flex; gap: 8px; align-items: center; margin-top: 2px; }
+  .star { border: none; background: var(--panel2); border: 1px solid var(--border); color: var(--muted); border-radius: 9px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+  .star.on { color: var(--yellow); border-color: rgba(250,204,21,.5); }
+  .star-top { position: absolute; top: 16px; left: 16px; border: none; background: transparent; font-size: 18px; padding: 0; line-height: 1; }
+  .star-top.on { color: var(--yellow); }
+  .card h3 { padding-left: 24px; }
+  .see { font-size: 13px; color: var(--accent2); text-decoration: none; font-weight: 600; }
+  .see:hover { text-decoration: underline; }
+
+  .empty { color: var(--muted); text-align: center; padding: 36px 0; }
+  .empty h3 { color: var(--text); font-size: 16px; margin-bottom: 6px; }
+  .empty p { font-size: 13px; max-width: 460px; margin: 0 auto 14px; }
+  .empty .actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .error { color: var(--red); border: 1px solid var(--red); background: rgba(248,113,113,.07); border-radius: 10px; padding: 14px 16px; font-size: 14px; }
+  .loading { display: inline-flex; align-items: center; gap: 10px; color: var(--muted); }
+  .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .shortlist-panel { font-size: 13px; color: var(--muted); }
+  .shortlist-panel h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 8px; }
+  .shortlist-items { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sl-item { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 12px; }
+  .sl-item b { color: var(--text); }
+  .sl-note { margin-top: 10px; font-size: 12px; color: var(--amber); }
+
+  .ctx-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .ctx-head h2 { margin: 0; }
+  .ctx-head select { width: auto; min-width: 200px; }
+  .ctx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .ctx-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 18px; position: relative; overflow: hidden; box-shadow: var(--shadow); min-height: 140px;
+  }
+  .ctx-card .kicker { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .ctx-card .big { font-size: 30px; font-weight: 800; letter-spacing: -1px; margin-top: 6px; }
+  .ctx-card .big small { font-size: 15px; color: var(--muted); font-weight: 500; }
+  .ctx-card .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .ctx-card .flag { width: 26px; height: 18px; border-radius: 4px; object-fit: cover; border: 1px solid var(--border); }
+  .ctx-card svg.spark { position: absolute; bottom: 12px; left: 18px; right: 18px; }
+  .ctx-error { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  .ctx-loading { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+
+  footer { margin-top: 40px; text-align: center; color: var(--muted); font-size: 12px; line-height: 1.9; }
+  footer a { color: var(--accent2); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7z"/><path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <h1>Policy <span>Fit</span> Checker</h1>
+    </div>
+    <div class="head-right">
+      <div class="live"><span class="pulse"></span>Live · Google Sheets</div>
+      <details class="glossary">
+        <summary>Plain-language glossary</summary>
+        <div class="glossary-body">
+          <dl>
+            <dt>Premium</dt><dd>The amount you pay each month to keep the policy.</dd>
+            <dt>Excess (deductible)</dt><dd>You pay the first €X of any claim yourself; the insurer pays the rest.</dd>
+            <dt>Cover amount</dt><dd>The maximum the insurer will pay out on a claim.</dd>
+            <dt>Pre-existing condition</dt><dd>A health condition you already had before the policy started.</dd>
+            <dt>Pre-existing-condition exclusion</dt><dd>This policy won't cover a condition you already have.</dd>
+            <dt>Simplified underwriting</dt><dd>Fewer health questions before they accept you — easier to get, usually costs more.</dd>
+            <dt>Waiting period / moratorium</dt><dd>A condition you've had recently isn't covered at first; cover kicks in after a set time.</dd>
+            <dt>Indemnity vs pay-out</dt><dd>Indemnity reimburses actual costs; pay-out gives a fixed lump sum on a defined event.</dd>
+          </dl>
+        </div>
+      </details>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel">
+      <h2>Tell us about your life</h2>
+
+      <label for="stage">Life stage</label>
+      <select id="stage">
+        <option value="Student">Student</option>
+        <option value="Young Professional">Young Professional</option>
+        <option value="New Parent">New Parent</option>
+        <option value="Family">Family</option>
+        <option value="Self-Employed">Self-Employed</option>
+        <option value="Chronic Condition Management">Chronic Condition Management</option>
+        <option value="Senior">Senior</option>
+        <option value="General Adult">General Adult</option>
+      </select>
+
+      <label for="age">Age: <span class="age-label" id="ageLabel">30</span></label>
+      <input type="range" id="age" min="17" max="85" value="30">
+      <div class="range-val"><span>17</span><span>85</span></div>
+
+      <label for="region">Region</label>
+      <select id="region">
+        <option value="Any">Any</option>
+        <option value="EU-Wide">EU-Wide</option>
+        <option value="Ireland">Ireland</option>
+        <option value="UK">UK</option>
+      </select>
+
+      <div class="cond-block">
+        <label for="condition">Does a health condition affect what cover you need? <span class="cond-hero">NEW</span></label>
+        <select id="condition">
+          <option value="None">None</option>
+          <option value="Diabetes / endocrine">Diabetes / endocrine</option>
+          <option value="Heart / cardiovascular">Heart / cardiovascular</option>
+          <option value="Cancer history">Cancer history</option>
+          <option value="Asthma / COPD">Asthma / COPD</option>
+          <option value="Mental health">Mental health</option>
+          <option value="Mobility / arthritis">Mobility / arthritis</option>
+          <option value="Other">Other</option>
+        </select>
+        <div class="cond-note">We never share this. It only checks what each policy excludes, so you see ✅ / ⚠️ / ❌ before you pay.</div>
+      </div>
+
+      <label for="budget">Max monthly budget (EUR)</label>
+      <input type="number" id="budget" min="0" value="60" placeholder="e.g. 60">
+
+      <label>Insurance types (choose one or more)</label>
+      <div class="chips" id="typeChips">
+        <span class="chip" data-t="Income Protection">Income Protection</span>
+        <span class="chip" data-t="Health">Health</span>
+        <span class="chip" data-t="Life">Life</span>
+        <span class="chip" data-t="Critical Illness">Critical Illness</span>
+        <span class="chip" data-t="Auto">Auto</span>
+        <span class="chip" data-t="Home/Renters">Home/Renters</span>
+        <span class="chip" data-t="Travel">Travel</span>
+        <span class="chip" data-t="Pet">Pet</span>
+        <span class="chip" data-t="Business Liability">Business Liability</span>
+        <span class="chip" data-t="Student">Student</span>
+      </div>
+
+      <button class="primary" id="btn" disabled>Check my fit</button>
+      <div id="status"></div>
+
+      <div class="personas">
+        <button class="persona-btn" data-persona="mairead">Mairead<small>72 · diabetes · €60</small></button>
+        <button class="persona-btn" data-persona="david">David<small>58 · heart · €100</small></button>
+        <button class="persona-btn" data-persona="priya">Priya<small>41 · asthma · €135</small></button>
+      </div>
+    </aside>
+
+    <div class="main-col">
+      <section class="panel">
+        <div class="results-head">
+          <h2>Best-fit policies</h2>
+          <span class="count" id="count"></span>
+        </div>
+        <div id="results"><div class="empty">Enter your details and hit "Check my fit".</div></div>
+      </section>
+
+      <section class="panel">
+        <div class="shortlist-panel">
+          <h3>Your shortlist</h3>
+          <div class="shortlist-items" id="shortlistItems"></div>
+          <div class="sl-note" id="shortlistNote">Tap ☆ on any card to shortlist it. Take the policy ID when you call the provider.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="ctx-head">
+          <h2>Live location context</h2>
+          <select id="country">
+            <option value="IE">Ireland · Dublin</option>
+            <option value="GB">United Kingdom · London</option>
+            <option value="FR">France · Paris</option>
+            <option value="DE">Germany · Berlin</option>
+            <option value="ES">Spain · Madrid</option>
+            <option value="IT">Italy · Rome</option>
+            <option value="PT">Portugal · Lisbon</option>
+            <option value="NL">Netherlands · Amsterdam</option>
+            <option value="BE">Belgium · Brussels</option>
+            <option value="AT">Austria · Vienna</option>
+            <option value="CH">Switzerland · Bern</option>
+            <option value="SE">Sweden · Stockholm</option>
+            <option value="DK">Denmark · Copenhagen</option>
+            <option value="NO">Norway · Oslo</option>
+            <option value="FI">Finland · Helsinki</option>
+            <option value="PL">Poland · Warsaw</option>
+            <option value="CZ">Czechia · Prague</option>
+          </select>
+        </div>
+        <div class="ctx-grid" id="ctxGrid"></div>
+      </section>
+    </div>
+  </div>
+
+  <footer>
+    Live policy database: <a href="https://docs.google.com/spreadsheets/d/1ZzLcYTmbQ79kY4tHG52gfPWZdgsTdOs9yLBMZrFdcS8/edit" target="_blank">PFC Policy Database (Google Sheets)</a><br>
+    Fit scores are indicative — always confirm your condition with the provider before you buy.
+  </footer>
+
+</div>
+
+<script>
+const SHEET_ID = "1ZzLcYTmbQ79kY4tHG52gfPWZdgsTdOs9yLBMZrFdcS8";
+const SHEET_JSONP = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json;responseHandler:pfcCallback";
+const SHEET_CSV = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv";
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/edit";
+
+/* 100-point weights — the Researcher re-tunes these, don't scatter them. */
+const WEIGHTS = { lifeStage: 25, condition: 30, affordability: 20, region: 10, rating: 10, coverage: 5 };
+
+const STAGE_TAGS = {
+  "Student": ["budget-friendly","low-commitment","student","under-26"],
+  "Young Professional": ["career-focused","flexible","no-dependents","digital-first"],
+  "Family": ["multi-person-cover","dependents","family-discount"],
+  "New Parent": ["family-protection","income-replacement","dependents","long-term"],
+  "Self-Employed": ["self-employed-friendly","flexible-income-cover","no-employer-benefits"],
+  "Chronic Condition Management": ["pre-existing-condition-friendly","ongoing-care","specialist-cover"],
+  "Senior": ["pre-existing-condition-friendly","fixed-income","over-60","simplified-underwriting"],
+  "General Adult": ["standard-cover","general-purpose"]
+};
+const NEAR_STAGE = {
+  "Senior": ["Chronic Condition Management"],
+  "Chronic Condition Management": ["Senior"],
+  "New Parent": ["Family"],
+  "Family": ["New Parent"]
+};
+
+const CONDITIONS = {
+  "None": { label: "none", keywords: [] },
+  "Diabetes / endocrine": { label: "diabetes", keywords: ["diabetes","endocrine","diabetic","pre-existing","pre-policy","chronic"] },
+  "Heart / cardiovascular": { label: "heart condition", keywords: ["heart","cardiac","cardiovascular","afib","atrial","fibrillation","pre-existing","pre-policy","chronic"] },
+  "Cancer history": { label: "cancer history", keywords: ["cancer","malignancy","tumour","tumor","pre-existing","pre-policy"] },
+  "Asthma / COPD": { label: "asthma/COPD", keywords: ["asthma","respiratory","lung","copd","breathing","pre-existing","pre-policy","chronic"] },
+  "Mental health": { label: "mental-health condition", keywords: ["mental","psychiatric","depression","anxiety","pre-existing","pre-policy"] },
+  "Mobility / arthritis": { label: "mobility/arthritis", keywords: ["mobility","arthritis","joint","rheumatoid","pre-existing","pre-policy","chronic"] },
+  "Other": { label: "your condition", keywords: ["pre-existing","pre-policy","chronic","medical","health","condition"] }
+};
+const POSITIVE_SIGNALS = ["pre-existing","ongoing-care","specialist-cover","simplified-underwriting","pre-existing-condition-friendly"];
+
+const COVERAGE_BENCHMARKS = {
+  "Income Protection": 2500, "Health": 20000, "Life": 250000, "Critical Illness": 100000,
+  "Travel": 1000000, "Auto": 40000, "Home/Renters": 100000, "Pet": 4000,
+  "Student": 3000, "Business Liability": 1000000
+};
+
+const COUNTRIES = {
+  IE: { name: "Ireland", capital: "Dublin", lat: 53.35, lon: -6.26, flag: "ie" },
+  GB: { name: "United Kingdom", capital: "London", lat: 51.51, lon: -0.13, flag: "gb" },
+  FR: { name: "France", capital: "Paris", lat: 48.86, lon: 2.35, flag: "fr" },
+  DE: { name: "Germany", capital: "Berlin", lat: 52.52, lon: 13.40, flag: "de" },
+  ES: { name: "Spain", capital: "Madrid", lat: 40.42, lon: -3.70, flag: "es" },
+  IT: { name: "Italy", capital: "Rome", lat: 41.90, lon: 12.50, flag: "it" },
+  PT: { name: "Portugal", capital: "Lisbon", lat: 38.72, lon: -9.14, flag: "pt" },
+  NL: { name: "Netherlands", capital: "Amsterdam", lat: 52.37, lon: 4.90, flag: "nl" },
+  BE: { name: "Belgium", capital: "Brussels", lat: 50.85, lon: 4.35, flag: "be" },
+  AT: { name: "Austria", capital: "Vienna", lat: 48.21, lon: 16.37, flag: "at" },
+  CH: { name: "Switzerland", capital: "Bern", lat: 46.95, lon: 7.45, flag: "ch" },
+  SE: { name: "Sweden", capital: "Stockholm", lat: 59.33, lon: 18.07, flag: "se" },
+  DK: { name: "Denmark", capital: "Copenhagen", lat: 55.68, lon: 12.57, flag: "dk" },
+  NO: { name: "Norway", capital: "Oslo", lat: 59.91, lon: 10.75, flag: "no" },
+  FI: { name: "Finland", capital: "Helsinki", lat: 60.17, lon: 24.94, flag: "fi" },
+  PL: { name: "Poland", capital: "Warsaw", lat: 52.23, lon: 21.01, flag: "pl" },
+  CZ: { name: "Czechia", capital: "Prague", lat: 50.08, lon: 14.44, flag: "cz" }
+};
+const WB = "https://api.worldbank.org/v2/country";
+const OM = "https://api.open-meteo.com/v1/forecast";
+
+const WMO = {
+  0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+  45: "Fog", 48: "Rime fog",
+  51: "Light drizzle", 53: "Drizzle", 55: "Dense drizzle",
+  56: "Freezing drizzle", 57: "Dense freezing drizzle",
+  61: "Light rain", 63: "Rain", 65: "Heavy rain",
+  66: "Freezing rain", 67: "Heavy freezing rain",
+  71: "Light snow", 73: "Snow", 75: "Heavy snow", 77: "Snow grains",
+  80: "Light showers", 81: "Rain showers", 82: "Violent showers",
+  85: "Snow showers", 86: "Heavy snow showers",
+  95: "Thunderstorm", 96: "Thunderstorm with hail", 99: "Thunderstorm with heavy hail"
+};
+
+let policies = [];
+const shortlist = new Set();
+
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+function eur(n, dec) {
+  if (n == null) return "—";
+  return n.toLocaleString("en-IE", { minimumFractionDigits: dec == null ? 2 : dec, maximumFractionDigits: dec == null ? 2 : dec });
+}
+function fmt(n) { return n == null ? "—" : Math.round(n).toLocaleString("en-IE"); }
+
+/* ---------- generic fetch + JSONP loader (file:// safe) ---------- */
+async function loadJSON(url, jsonpParam) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return await res.json();
+  } catch (e) {
+    return await loadJSONP(url, jsonpParam);
+  }
+}
+function loadJSONP(url, param) {
+  return new Promise((resolve, reject) => {
+    const cb = "pfc_jp_" + Math.random().toString(36).slice(2);
+    const s = document.createElement("script");
+    let done = false;
+    function finish(fn, arg) { if (done) return; done = true; clearTimeout(timer); delete window[cb]; s.remove(); fn(arg); }
+    window[cb] = (data) => finish(resolve, data);
+    const timer = setTimeout(() => finish(reject, new Error("timed out")), 20000);
+    s.onerror = () => finish(reject, new Error("script load failed"));
+    s.src = url + (url.includes("?") ? "&" : "?") + param + "=" + cb;
+    document.head.appendChild(s);
+  });
+}
+
+/* ---------- policy sheet loaders ---------- */
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cur = "", inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') { if (text[i+1] === '"') { cur += '"'; i++; } else inQ = false; }
+      else cur += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ',') { row.push(cur); cur = ""; }
+      else if (c === "\n" || c === "\r") {
+        if (c === "\r" && text[i+1] === "\n") i++;
+        row.push(cur); cur = "";
+        if (row.some(x => x.trim() !== "")) rows.push(row);
+        row = [];
+      } else cur += c;
+    }
+  }
+  row.push(cur);
+  if (row.some(x => x.trim() !== "")) rows.push(row);
+  return rows;
+}
+
+function rowToPolicy(h, r) {
+  const p = {};
+  h.forEach((col, i) => {
+    const v = (r[i] || "").trim();
+    if (["min_age","max_age","monthly_premium_eur","coverage_amount_eur","deductible_eur","rating_out_of_5"].includes(col))
+      p[col] = parseFloat(v) || 0;
+    else if (col === "suitability_tags") p[col] = v.split(",").map(s => s.trim()).filter(Boolean);
+    else p[col] = v;
+  });
+  return p;
+}
+
+function gvizToPolicies(resp) {
+  if (!resp || resp.status !== "ok" || !resp.table)
+    throw new Error(resp && resp.errors ? resp.errors[0].message : "Unexpected response from Google Sheets");
+  const header = resp.table.cols.map(c => (c.label && c.label !== "") ? c.label : c.id);
+  const rows = resp.table.rows.map(r => r.c.map(cell => (cell && cell.v != null) ? String(cell.v) : ""));
+  return rows.map(r => rowToPolicy(header, r));
+}
+
+function loadViaJSONP() {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    let done = false;
+    function cleanup() { delete window.pfcCallback; s.remove(); }
+    window.pfcCallback = (json) => {
+      if (done) return; done = true; clearTimeout(timer); cleanup();
+      try { resolve(gvizToPolicies(json)); } catch (e) { reject(e); }
+    };
+    const timer = setTimeout(() => { if (!done) { done = true; cleanup(); reject(new Error("JSONP timeout")); } }, 20000);
+    s.onerror = () => { if (!done) { done = true; clearTimeout(timer); cleanup(); reject(new Error("JSONP script failed to load")); } };
+    s.src = SHEET_JSONP;
+    document.head.appendChild(s);
+  });
+}
+
+async function loadData() {
+  const status = document.getElementById("status");
+  status.innerHTML = '<span class="loading"><span class="spinner"></span>Syncing live policy data from Google Sheets…</span>';
+  try {
+    let loaded;
+    try {
+      loaded = await loadViaJSONP();
+    } catch (e1) {
+      const rows = parseCSV(await (await fetch(SHEET_CSV)).text());
+      const header = rows[0];
+      loaded = rows.slice(1).map(r => rowToPolicy(header, r));
+    }
+    policies = loaded;
+    status.innerHTML = policies.length + " policies synced from Google Sheets.";
+    document.getElementById("btn").disabled = false;
+  } catch (e) {
+    status.innerHTML = "";
+    document.getElementById("results").innerHTML =
+      '<div class="error">Could not reach Google Sheets: ' + e.message + '.<br>Make sure the sheet is shared as "Anyone with the link" (View), then try again.<br><br>Tip: if this persists when opening the file directly, serve it locally instead:<br><b>python -m http.server 8000</b> then open <b>http://localhost:8000/prototype/pfc-app-v1.html</b></div>';
+    document.getElementById("btn").disabled = true;
+  }
+}
+
+/* ---------- condition stance classifier (one keyword-table function) ---------- */
+function classifyStance(p, condition) {
+  if (condition === "None") return { stance: "none", label: "", emoji: "", reason: "" };
+  const spec = CONDITIONS[condition];
+  const low = (p.suitability_tags || []).join(" ") + " " + (p.key_features || "");
+  const lowText = low.toLowerCase();
+  const positive = POSITIVE_SIGNALS.some(s => lowText.includes(s));
+  const exc = (p.exclusions || "").toLowerCase();
+  const excText = p.exclusions || "";
+
+  const undeclaredOnly = /undeclared pre-existing/.test(exc);
+  const waiting = /pre-existing conditions excluded for (the )?(first )?\d+|\bwaiting period\b|moratorium|for the first \d+ (months|years)/.test(exc);
+  const hardGeneric = /pre-existing conditions excluded|conditions diagnosed pre-policy excluded|pre-policy excluded/.test(exc);
+  const specificKw = spec.keywords.filter(k => k !== "pre-existing" && k !== "pre-policy" && k !== "chronic")
+    .find(k => exc.includes(k));
+
+  if (undeclaredOnly) {
+    if (positive) return { stance: "ok", label: "Pre-existing friendly", emoji: "✅",
+      reason: "Only *undeclared* conditions are excluded — and this policy names pre-existing-condition cover, so a declared " + spec.label + " should be covered." };
+    return { stance: "caution", label: "Not clearly stated", emoji: "⚠️",
+      reason: "Only *undeclared* pre-existing conditions are excluded, but it doesn't say whether a declared " + spec.label + " would be covered — verify before you buy." };
+  }
+  if (waiting) return { stance: "caution", label: "Waiting period", emoji: "⚠️",
+    reason: "The exclusions put a waiting period on pre-existing conditions (e.g. \"excluded for first 6 months\") — your " + spec.label + " may not be covered at first. Ask about the terms." };
+  if (hardGeneric || specificKw) return { stance: "risk", label: "Exclusion risk", emoji: "❌",
+    reason: specificKw
+      ? "The exclusions mention \"" + specificKw + "\" — this policy would likely not cover your " + spec.label + "."
+      : "The exclusions say pre-existing conditions are excluded — as written, this policy would not cover your " + spec.label + "." };
+  if (positive) return { stance: "ok", label: "Pre-existing friendly", emoji: "✅",
+    reason: "Its tags and features signal pre-existing-condition cover (ongoing care / simplified underwriting) — built for people managing conditions." };
+  return { stance: "caution", label: "Not clearly stated", emoji: "⚠️",
+    reason: "No exclusion found and no pre-existing-friendly wording — the data doesn't say. Verify with the provider before you buy." };
+}
+
+/* ---------- 100-point fit scoring (hard age gate; budget stays soft) ---------- */
+function fitScore(p, opts) {
+  if (opts.age < p.min_age || opts.age > p.max_age) return null;
+  const c = [];
+  const stage = opts.stage, target = p.target_life_stage;
+
+  let lifeScore = 0, lifeReason = "Built for " + target + ", not " + stage + " — weaker life fit.";
+  if (target === stage) { lifeScore = WEIGHTS.lifeStage; lifeReason = "Built for " + stage + " — that's your life stage."; }
+  else if (NEAR_STAGE[stage] && NEAR_STAGE[stage].includes(target)) {
+    lifeScore = Math.round(WEIGHTS.lifeStage * 0.6);
+    lifeReason = "Built for " + target + " — close to your " + stage + " life stage.";
+  }
+  c.push({ key: "lifeStage", label: "Life stage", score: lifeScore, max: WEIGHTS.lifeStage, reason: lifeReason });
+
+  const st = classifyStance(p, opts.condition);
+  const condScore = opts.condition === "None" ? WEIGHTS.condition
+    : st.stance === "ok" ? WEIGHTS.condition
+    : st.stance === "caution" ? Math.round(WEIGHTS.condition * 0.6)
+    : Math.round(WEIGHTS.condition * 0.13);
+  const condReason = opts.condition === "None"
+    ? "No condition disclosed — nothing for the exclusions to reject."
+    : st.emoji + " " + st.reason;
+  c.push({ key: "condition", label: "Condition", score: condScore, max: WEIGHTS.condition, reason: condReason, stance: st });
+
+  const prem = p.monthly_premium_eur;
+  const budget = opts.budget || 0;
+  const premiumRatio = budget > 0 ? Math.min(1, budget / prem) : 1;
+  const months = prem > 0 ? p.deductible_eur / prem : 0;
+  let deductFactor = 1, excessSentence = "excess is about a month of premium — fair";
+  if (months > 1 && months <= 12) { deductFactor = 0.85; excessSentence = "excess is about " + Math.round(months) + " months of premium — budget for it"; }
+  else if (months > 12) { deductFactor = Math.max(0.6, 1 - months / 60); excessSentence = "excess is steep — you pay the first \u2248 \u20AC" + fmt(p.deductible_eur / 12) + "/mo of any claim"; }
+  const affScore = WEIGHTS.affordability * premiumRatio * deductFactor;
+  const affReason = budget > 0
+    ? (prem <= budget
+        ? "\u20AC" + eur(prem) + "/mo fits your \u20AC" + fmt(budget) + " budget \u00b7 " + excessSentence + "."
+        : "\u20AC" + eur(prem) + "/mo is \u20AC" + fmt(prem - budget) + " over your \u20AC" + fmt(budget) + " budget \u00b7 shown anyway, ranked lower \u00b7 " + excessSentence + ".")
+    : "\u20AC" + eur(prem) + "/mo \u00b7 " + excessSentence + ".";
+  c.push({ key: "affordability", label: "Affordability", score: affScore, max: WEIGHTS.affordability, reason: affReason });
+
+  let regScore = WEIGHTS.region, regReason = "Sells " + (p.region === "EU-Wide" ? "EU-wide" : "in " + p.region) + ".";
+  if (opts.region === "Any") regReason = "No region filter — available anywhere.";
+  else if (p.region !== "EU-Wide" && p.region !== opts.region) { regScore = 0; regReason = "Sold in " + p.region + " only — not in your " + opts.region + " region."; }
+  c.push({ key: "region", label: "Region", score: regScore, max: WEIGHTS.region, reason: regReason });
+
+  const ratingScore = WEIGHTS.rating * (p.rating_out_of_5 / 5);
+  c.push({ key: "rating", label: "Rating", score: ratingScore, max: WEIGHTS.rating, reason: "Rated " + p.rating_out_of_5 + "/5 by customers." });
+
+  const bench = COVERAGE_BENCHMARKS[p.insurance_type] || 100000;
+  const covScore = WEIGHTS.coverage * Math.min(1, p.coverage_amount_eur / bench);
+  const covReason = p.coverage_amount_eur >= bench
+    ? "\u20AC" + fmt(p.coverage_amount_eur) + " cover is strong for " + p.insurance_type + " (typical \u2248 \u20AC" + fmt(bench) + ")."
+    : "\u20AC" + fmt(p.coverage_amount_eur) + " cover is modest for " + p.insurance_type + " (typical \u2248 \u20AC" + fmt(bench) + ").";
+  c.push({ key: "coverage", label: "Coverage", score: covScore, max: WEIGHTS.coverage, reason: covReason });
+
+  const total = c.reduce((s, x) => s + x.score, 0);
+  return { score: total, components: c, over: budget > 0 ? prem - budget : 0 };
+}
+
+function rank(policies, opts) {
+  return policies.map(p => ({ p, f: fitScore(p, opts) }))
+    .filter(x => x.f !== null)
+    .sort((a, b) => b.f.score - a.f.score || a.p.monthly_premium_eur - b.p.monthly_premium_eur);
+}
+
+/* ---------- render helpers ---------- */
+function barHTML(label, score, max, reason) {
+  const pct = Math.max(0, Math.min(100, score / max * 100));
+  return '<div class="bar-row">' +
+    '<div class="bar-head"><span class="bar-label">' + label + '</span><span class="bar-score">' + Math.round(score) + '/' + max + '</span></div>' +
+    '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>' +
+    '<div class="bar-reason">' + escapeHTML(reason) + '</div></div>';
+}
+
+function stanceHTML(st) {
+  if (st.stance === "none") return "";
+  const cls = st.stance === "ok" ? "ok" : st.stance === "caution" ? "caution" : "risk";
+  return '<div class="stance ' + cls + '">' + st.emoji + ' ' + st.label + '</div>';
+}
+
+function exclusionPreviewHTML(p, opts) {
+  const parts = (p.exclusions || "").split(";").map(s => s.trim()).filter(Boolean).slice(0, 2);
+  if (!parts.length) return "";
+  const spec = CONDITIONS[opts.condition];
+  const kws = spec ? spec.keywords : [];
+  const items = parts.map(frag => {
+    const hit = kws.some(k => k.length > 2 && frag.toLowerCase().includes(k));
+    return '<li>' + (hit ? '<mark>' + escapeHTML(frag) + '</mark>' : escapeHTML(frag)) + '</li>';
+  }).join("");
+  return '<div class="excls"><span class="excl-h">Exclusions</span><ul>' + items + '</ul></div>';
+}
+
+function cardHTML({ p, f }, i, opts) {
+  const cls = f.score >= 70 ? "high" : f.score >= 45 ? "mid" : "low";
+  const top = i === 0 ? " top" : "";
+  const st = f.components.find(x => x.key === "condition");
+  const sl = shortlist.has(p.policy_id) ? " on" : "";
+  const over = f.over > 0
+    ? '<span class="ob-badge">€' + fmt(f.over) + ' over your budget</span>'
+    : "";
+  const features = (p.key_features || "").split(";").filter(Boolean).slice(0, 3)
+    .map(x => "<li>" + escapeHTML(x.trim()) + "</li>").join("");
+  const bars = f.components.map(x => barHTML(x.label, x.score, x.max, x.reason)).join("");
+  const verify = "Remember: this is indicative, not a guarantee. Confirm your " + CONDITIONS[opts.condition].label + " with " + p.provider_name + " before you buy. Quote policy ID <b>" + p.policy_id + "</b>.";
+  return '<div class="card' + top + '">' +
+    '<button class="star star-top' + sl + '" data-id="' + p.policy_id + '" title="Shortlist">' + (sl ? "★" : "☆") + '</button>' +
+    '<div class="score-badge ' + cls + '">' + Math.round(f.score) + '</div>' +
+    '<h3>' + escapeHTML(p.policy_name) + '</h3>' +
+    '<div class="provider">' + escapeHTML(p.provider_name) + ' · ' + escapeHTML(p.region) + '</div>' +
+    '<div class="meta">' +
+      '<span class="tag type">' + escapeHTML(p.insurance_type) + '</span>' +
+      '<span class="tag">ages ' + p.min_age + '–' + p.max_age + '</span>' +
+      '<span class="tag">' + escapeHTML(p.target_life_stage) + '</span>' +
+    '</div>' +
+    stanceHTML(st.stance) +
+    '<div class="price-row">' +
+      '<div class="premium">€' + eur(p.monthly_premium_eur) + '<small> /month</small></div>' +
+      over +
+      '<div class="price-meta">you pay first €' + fmt(p.deductible_eur) + '/yr · <b>€' + fmt(p.coverage_amount_eur) + '</b> cover</div>' +
+    '</div>' +
+    '<ul class="features">' + features + '</ul>' +
+    exclusionPreviewHTML(p, opts) +
+    '<details class="why"><summary>Why this fits (score breakdown)</summary><div class="why-body">' +
+      '<div class="why-head">Why this fits · score ' + Math.round(f.score) + '/100</div>' +
+      bars +
+      '<div class="verify">⚠ ' + escapeHTML(verify) + '</div>' +
+    '</div></details>' +
+    '<div class="card-actions">' +
+      '<button class="star star-act' + sl + '" data-id="' + p.policy_id + '">' + (sl ? "★ Shortlisted" : "☆ Shortlist") + '</button>' +
+      '<a class="see" href="' + SHEET_URL + '" target="_blank">See in the database</a>' +
+    '</div></div>';
+}
+
+function lowerAgeTarget(age) {
+  const boundaries = policies.map(p => p.max_age).filter(m => m < age);
+  return boundaries.length ? Math.max(...boundaries) : null;
+}
+function topOverBudget(ranked, budget) {
+  if (!budget) return null;
+  const top = ranked.find(x => x.p.monthly_premium_eur > budget);
+  return top ? Math.ceil(top.p.monthly_premium_eur / 5) * 5 : null;
+}
+
+function bannerHTML(ranked, opts) {
+  const budget = opts.budget || 0;
+  const within = ranked.filter(x => !budget || x.p.monthly_premium_eur <= budget).length;
+  const thin = ranked.length <= 6 || within <= 1;
+  if (!thin) return "";
+  const age = opts.age;
+  const lowerAge = lowerAgeTarget(age);
+  const widen = topOverBudget(ranked, budget);
+  const actions = [];
+  if (widen) actions.push('<button class="btn-sm" onclick="widenBudget()">Widen budget to €' + fmt(widen) + '</button>');
+  if (lowerAge) actions.push('<button class="btn-sm ghost" onclick="lowerAge()">I\u2019m not ' + age + ' yet \u2014 see age ' + lowerAge + '</button>');
+  const budgetLine = budget
+    ? "Of those, <b>" + within + "</b> sit within your \u20AC" + fmt(budget) + " budget; the rest are shown with an over-budget badge rather than hidden."
+    : "We show every policy that fits your age and region, even over your budget, so you can judge for yourself.";
+  return '<div class="banner">' +
+    '<h3>Only ' + ranked.length + ' polic' + (ranked.length === 1 ? "y fits" : "ies fit") + ' your life at age ' + age + '.</h3>' +
+    '<p>Age narrows the shelf fast (51 at 25 → ' + ranked.length + ' at ' + age + '). We won\u2019t pad it with policies that will reject you. ' + budgetLine + '</p>' +
+    (actions.length ? '<div class="actions">' + actions.join("") + '</div>' : '') +
+  '</div>';
+}
+
+function getSelectedTypes() {
+  return [...document.querySelectorAll("#typeChips .chip")]
+    .filter(c => c.classList.contains("on")).map(c => c.dataset.t);
+}
+
+function emptyHTML(opts) {
+  const lowerAge = lowerAgeTarget(opts.age);
+  const actions = [];
+  if (lowerAge) actions.push('<button class="btn-sm" onclick="lowerAge()">Lower my age to ' + lowerAge + '</button>');
+  actions.push('<button class="btn-sm ghost" onclick="clearTypes()">Show every policy type</button>');
+  const types = getSelectedTypes();
+  const typeText = types.length ? types.join(" + ") : "the current filters";
+  return '<div class="empty">' +
+    '<h3>No ' + escapeHTML(typeText) + ' policies fit your life at age ' + opts.age + '.</h3>' +
+    '<p>The data is blunt: nothing in this catalogue matches ' + escapeHTML(opts.stage) + ' at age ' + opts.age + ' in ' + escapeHTML(opts.region) + (opts.condition !== "None" ? " with " + escapeHTML(CONDITIONS[opts.condition].label) : "") + '. We won\u2019t fake a match.</p>' +
+    '<div class="actions">' + actions.join("") + '</div>' +
+    '<p style="margin-top:12px;font-size:12px;">This may be a known gap we\u2019re tracking \u2014 e.g. no Income Protection exists for the Chronic Condition Management stage yet.</p>' +
+  '</div>';
+}
+
+function legendHTML() {
+  return '<div class="legend">' +
+    '<span class="legend-item">✅ Pre-existing friendly — tags/features mention pre-existing cover or simplified underwriting</span>' +
+    '<span class="legend-item">⚠️ Not clearly stated — no exclusion found and no pre-existing mention; verify before you buy</span>' +
+    '<span class="legend-item">❌ Exclusion risk — the exclusions text overlaps your condition; shown with its price so you don\u2019t waste money learning the hard way</span>' +
+  '</div>';
+}
+
+function render(ranked, opts) {
+  const el = document.getElementById("results");
+  const budget = opts.budget || 0;
+  const within = ranked.filter(x => !budget || x.p.monthly_premium_eur <= budget).length;
+  document.getElementById("count").textContent = ranked.length + " eligible · " + within + " within budget";
+
+  if (!ranked.length) {
+    el.innerHTML = '<div class="empty" style="padding:24px 0;">' + emptyHTML(opts) + '</div>';
+    return;
+  }
+  const banner = bannerHTML(ranked, opts);
+  const legend = opts.condition !== "None" ? legendHTML() : "";
+  el.innerHTML = "";
+  if (banner) el.insertAdjacentHTML("beforeend", banner);
+  if (legend) el.insertAdjacentHTML("beforeend", legend);
+  ranked.forEach(({ p, f }, i) => el.insertAdjacentHTML("beforeend", cardHTML({ p, f }, i, opts)));
+  wireCardEvents();
+}
+
+function wireCardEvents() {
+  document.querySelectorAll(".card .star").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      if (shortlist.has(id)) shortlist.delete(id); else shortlist.add(id);
+      document.querySelectorAll('.card .star[data-id="' + id + '"]').forEach(b => {
+        const on = shortlist.has(id);
+        b.classList.toggle("on", on);
+        b.textContent = b.classList.contains("star-act") ? (on ? "★ Shortlisted" : "☆ Shortlist") : (on ? "★" : "☆");
+      });
+      renderShortlist();
+    });
+  });
+}
+
+function renderShortlist() {
+  const box = document.getElementById("shortlistItems");
+  const note = document.getElementById("shortlistNote");
+  if (!shortlist.size) {
+    box.innerHTML = "";
+    note.innerHTML = "Tap ☆ on any card to shortlist it. Take the policy ID when you call the provider.";
+    return;
+  }
+  const items = policies.filter(p => shortlist.has(p.policy_id));
+  box.innerHTML = items.map(p =>
+    '<span class="sl-item">' + escapeHTML(p.provider_name) + ' · <b>' + p.policy_id + '</b></span>'
+  ).join("");
+  note.innerHTML = "Call the provider and quote the policy ID. The ✅/⚠️/❌ stance is indicative — confirm your condition before you buy.";
+}
+
+/* ---------- live location context (weather / GDP / country) ---------- */
+const ctxGrid = document.getElementById("ctxGrid");
+
+function ctxCard(kickerHTML, bigHTML, subHTML, extra) {
+  return '<div class="ctx-card">' +
+    '<div class="kicker">' + kickerHTML + '</div>' +
+    '<div class="big">' + bigHTML + '</div>' +
+    '<div class="sub">' + subHTML + '</div>' +
+    (extra || "") + '</div>';
+}
+
+function gdpSparkline(values) {
+  if (!values || values.length < 2) return "";
+  const arr = values.slice().reverse();
+  const max = Math.max(...arr), min = Math.min(...arr);
+  const w = 200, h = 34, pad = 2;
+  const span = (max - min) || 1;
+  const bw = (w - arr.length * 3) / arr.length;
+  let bars = "";
+  arr.forEach((v, i) => {
+    const bh = Math.max(3, (v - min) / span * (h - 6));
+    bars += `<rect x="${i * (bw + 3)}" y="${h - bh - pad}" width="${bw}" height="${bh}" rx="2" fill="${i === arr.length - 1 ? "url(#gdpGrad)" : "rgba(255,255,255,.14)"}"/>`;
+  });
+  return '<svg class="spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
+    '<defs><linearGradient id="gdpGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ade80"/><stop offset="100%" stop-color="#4da3ff"/></linearGradient></defs>' +
+    bars + '</svg>';
+}
+
+function fmtNum(n) { return (n == null) ? "—" : Math.round(n).toLocaleString(); }
+
+async function loadLocation(key) {
+  const c = COUNTRIES[key];
+  if (!c) return;
+  ctxGrid.innerHTML = '<div class="ctx-card" style="grid-column:1/-1"><div class="ctx-loading"><span class="spinner"></span>Loading live context for ' + escapeHTML(c.name) + '…</div></div>';
+
+  const jobs = [weatherJob(c), countryJob(key), gdpJob(key)];
+  const [weather, country, gdp] = await Promise.all(jobs.map(p => p.catch(e => ({ error: e.message }))));
+  ctxGrid.innerHTML = "";
+
+  if (weather && !weather.error) {
+    const code = weather.current.weather_code != null ? weather.current.weather_code : (weather.current_weather ? weather.current_weather.weathercode : null);
+    const temp = weather.current ? weather.current.temperature_2m : weather.current_weather.temperature;
+    const wind = weather.current ? weather.current.wind_speed_10m : weather.current_weather.windspeed;
+    const feel = weather.current && weather.current.apparent_temperature != null ? weather.current.apparent_temperature : null;
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard(
+      'Weather · ' + escapeHTML(c.capital),
+      Math.round(temp) + '°C',
+      (WMO[code] || "—") + ' · wind ' + Math.round(wind) + ' km/h' + (feel != null ? ' · feels like ' + Math.round(feel) + '°C' : ''),
+      ''
+    ));
+  } else {
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard("Weather", "—", '<div class="ctx-error">Unavailable</div>', ""));
+  }
+
+  if (country && !country.error) {
+    const info = country[1][0];
+    const flag = '<img class="flag" src="https://flagcdn.com/h24/' + c.flag + '.png" alt="' + escapeHTML(c.name) + '">';
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard(
+      flag + ' Country',
+      escapeHTML(info.name.value),
+      info.capitalCity + ' · ' + info.region.value + ' · ' + info.incomeLevel.value,
+      ''
+    ));
+  } else {
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard("Country", "—", '<div class="ctx-error">Unavailable</div>', ""));
+  }
+
+  if (gdp && !gdp.error) {
+    const data = gdp[1] || [];
+    const latest = data[0];
+    const vals = data.map(d => d.value).filter(v => v != null).reverse();
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard(
+      'GDP per capita',
+      latest ? '$' + fmtNum(latest.value) : "—",
+      latest ? 'current US$ · ' + latest.date + ' · last ' + data.length + ' years' : 'current US$',
+      gdpSparkline(vals)
+    ));
+  } else {
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard("GDP per capita", "—", '<div class="ctx-error">Unavailable</div>', ""));
+  }
+}
+
+function weatherJob(c) {
+  return loadJSON(OM + "?latitude=" + c.lat + "&longitude=" + c.lon + "&current=temperature_2m,apparent_temperature,wind_speed_10m,weather_code", "callback");
+}
+function countryJob(key) {
+  return loadJSON(WB + "/" + key + "?format=json", "callback");
+}
+function gdpJob(key) {
+  return loadJSON(WB + "/" + key + "/indicator/NY.GDP.PCAP.CD?format=json&mrv=8", "callback");
+}
+
+/* ---------- wiring ---------- */
+const stageSel = document.getElementById("stage");
+const ageInput = document.getElementById("age");
+const budgetInput = document.getElementById("budget");
+const regionSel = document.getElementById("region");
+const conditionSel = document.getElementById("condition");
+const countrySel = document.getElementById("country");
+const chips = document.querySelectorAll("#typeChips .chip");
+
+function readOpts() {
+  return {
+    stage: stageSel.value,
+    age: parseInt(ageInput.value, 10),
+    budget: parseFloat(budgetInput.value) || 0,
+    region: regionSel.value,
+    condition: conditionSel.value
+  };
+}
+
+function run() {
+  if (!policies.length) return;
+  const opts = readOpts();
+  const types = getSelectedTypes();
+  const pool = types.length ? policies.filter(p => types.includes(p.insurance_type)) : policies;
+  render(rank(pool, opts), opts);
+}
+
+function widenBudget() {
+  const opts = readOpts();
+  const types = getSelectedTypes();
+  const pool = types.length ? policies.filter(p => types.includes(p.insurance_type)) : policies;
+  const ranked = rank(pool, opts);
+  const target = topOverBudget(ranked, opts.budget);
+  if (target) { budgetInput.value = target; run(); }
+}
+
+function lowerAge() {
+  const t = lowerAgeTarget(readOpts().age);
+  if (t) { ageInput.value = t; document.getElementById("ageLabel").textContent = t; run(); }
+}
+
+function clearTypes() {
+  chips.forEach(c => c.classList.remove("on"));
+  run();
+}
+
+function setPersona(persona) {
+  const defs = {
+    mairead: { stage: "Senior", age: 72, region: "Ireland", condition: "Diabetes / endocrine", budget: 60, types: ["Travel", "Health"] },
+    david: { stage: "Chronic Condition Management", age: 58, region: "UK", condition: "Heart / cardiovascular", budget: 100, types: ["Life", "Health", "Critical Illness"] },
+    priya: { stage: "Self-Employed", age: 41, region: "Ireland", condition: "Asthma / COPD", budget: 135, types: ["Income Protection", "Health"] }
+  };
+  const d = defs[persona];
+  if (!d) return;
+  stageSel.value = d.stage;
+  ageInput.value = d.age;
+  document.getElementById("ageLabel").textContent = d.age;
+  regionSel.value = d.region;
+  conditionSel.value = d.condition;
+  budgetInput.value = d.budget;
+  chips.forEach(c => c.classList.toggle("on", d.types.includes(c.dataset.t)));
+  run();
+}
+
+ageInput.addEventListener("input", () => document.getElementById("ageLabel").textContent = ageInput.value);
+chips.forEach(c => c.addEventListener("click", () => c.classList.toggle("on")));
+countrySel.addEventListener("change", () => loadLocation(countrySel.value));
+document.querySelectorAll("[data-persona]").forEach(b => b.addEventListener("click", () => setPersona(b.dataset.persona)));
+document.getElementById("btn").addEventListener("click", run);
+
+renderShortlist();
+loadData();
+loadLocation(countrySel.value);
+</script>
+</body>
+</html>

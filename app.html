@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Policy Fit Checker</title>
+<style>
+  :root {
+    --bg: #09090b;
+    --bg2: #0d0d10;
+    --panel: #101013;
+    --panel2: #17171b;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.14);
+    --text: #fafafa;
+    --muted: #a1a1aa;
+    --accent: #8b7cf8;
+    --accent2: #4da3ff;
+    --green: #4ade80;
+    --yellow: #facc15;
+    --red: #f87171;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: dark; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(600px 300px at 20% -5%, rgba(139,124,248,.14), transparent 70%),
+      radial-gradient(700px 350px at 90% -10%, rgba(77,163,255,.12), transparent 70%);
+  }
+  .wrap { position: relative; z-index: 1; max-width: 1220px; margin: 0 auto; padding: 28px 24px 80px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .mark {
+    width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    box-shadow: 0 4px 18px rgba(139,124,248,.4);
+  }
+  .mark svg { width: 20px; height: 20px; }
+  .brand h1 { font-size: 20px; letter-spacing: -0.4px; font-weight: 700; }
+  .brand h1 span { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .live {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--green);
+    background: rgba(74,222,128,.08); border: 1px solid rgba(74,222,128,.25);
+    border-radius: 999px; padding: 5px 13px; font-weight: 600;
+  }
+  .live .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(74,222,128,.5);} 70%{box-shadow:0 0 0 7px rgba(74,222,128,0);} 100%{box-shadow:0 0 0 0 rgba(74,222,128,0);} }
+
+  .layout { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 920px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+  .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 14px; font-weight: 600; }
+
+  label { display: block; font-size: 12px; color: var(--muted); margin: 16px 0 6px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+  select, input[type=number] {
+    width: 100%; background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; font-size: 14px; outline: none; transition: border-color .12s ease, box-shadow .12s ease;
+  }
+  select:focus, input[type=number]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(139,124,248,.18); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    background: var(--panel2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 999px; padding: 6px 12px; font-size: 12px; cursor: pointer; user-select: none; transition: all .12s ease; font-weight: 500;
+  }
+  .chip:hover { border-color: var(--border-strong); color: var(--text); }
+  .chip.on { background: rgba(139,124,248,.15); border-color: var(--accent); color: #cfc8ff; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; background: var(--panel2); outline: none; }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); cursor: pointer;
+    border: 2px solid var(--bg); box-shadow: 0 0 0 3px rgba(139,124,248,.2);
+  }
+  input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg); }
+  .range-val { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+  .age-label { color: var(--accent); font-weight: 700; }
+
+  button.primary {
+    width: 100%; margin-top: 20px; border: none; border-radius: 10px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer;
+    color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent2));
+    box-shadow: 0 4px 20px rgba(139,124,248,.35); transition: filter .15s ease, transform .1s ease;
+  }
+  button.primary:hover { filter: brightness(1.12); }
+  button.primary:active { transform: scale(.99); }
+  button.primary:disabled { opacity: .5; cursor: wait; }
+  #status { margin-top: 12px; font-size: 13px; color: var(--muted); }
+
+  .main-col { display: flex; flex-direction: column; gap: 20px; }
+
+  .ctx-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .ctx-head h2 { margin: 0; }
+  .ctx-head select { width: auto; min-width: 200px; }
+
+  .ctx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .ctx-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 18px; position: relative; overflow: hidden; box-shadow: var(--shadow); min-height: 140px;
+  }
+  .ctx-card .kicker { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .ctx-card .big { font-size: 30px; font-weight: 800; letter-spacing: -1px; margin-top: 6px; }
+  .ctx-card .big small { font-size: 15px; color: var(--muted); font-weight: 500; }
+  .ctx-card .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .ctx-card .flag { width: 26px; height: 18px; border-radius: 4px; object-fit: cover; border: 1px solid var(--border); }
+  .ctx-card svg.spark { position: absolute; bottom: 12px; left: 18px; right: 18px; }
+  .ctx-error { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  .ctx-loading { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+
+  .results-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+  .results-head h2 { margin: 0; }
+  .results-head .count { color: var(--muted); font-size: 13px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px; display: flex; flex-direction: column; gap: 9px; position: relative; box-shadow: var(--shadow); transition: transform .15s ease, border-color .15s ease;
+  }
+  .card:hover { transform: translateY(-2px); }
+  .card.top { border-color: rgba(74,222,128,.5); }
+  .card.top::before { content: "Best fit"; position: absolute; top: -10px; left: 14px; background: var(--green); color: #052e16; font-size: 10px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; }
+  .score-badge {
+    position: absolute; top: 14px; right: 14px; width: 52px; height: 52px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;
+    background: var(--panel2); border: 2px solid var(--border); color: var(--muted);
+  }
+  .score-badge.high { border-color: var(--green); color: var(--green); }
+  .score-badge.mid { border-color: var(--yellow); color: var(--yellow); }
+  .score-badge.low { border-color: var(--red); color: var(--red); }
+  .card h3 { font-size: 15px; font-weight: 600; padding-right: 62px; letter-spacing: -0.2px; }
+  .provider { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { background: var(--panel2); border: 1px solid var(--border); border-radius: 7px; padding: 3px 9px; font-size: 11px; color: var(--muted); font-weight: 500; }
+  .tag.type { color: #cfc8ff; border-color: rgba(139,124,248,.4); background: rgba(139,124,248,.08); }
+  .premium { font-size: 22px; font-weight: 800; color: var(--green); letter-spacing: -0.5px; }
+  .premium small { color: var(--muted); font-size: 12px; font-weight: 400; }
+  .features { font-size: 13px; color: var(--muted); }
+  .features li { margin-left: 16px; margin-top: 3px; list-style: none; position: relative; }
+  .features li::before { content: "•"; position: absolute; left: -13px; color: var(--accent); font-weight: 700; }
+  .rating { font-size: 12px; color: var(--muted); }
+  .rating b { color: var(--yellow); }
+
+  .empty { color: var(--muted); text-align: center; padding: 48px 0; }
+  .error { color: var(--red); border: 1px solid var(--red); background: rgba(248,113,113,.07); border-radius: 10px; padding: 14px 16px; font-size: 14px; }
+  .loading { display: inline-flex; align-items: center; gap: 10px; color: var(--muted); }
+  .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  footer { margin-top: 40px; text-align: center; color: var(--muted); font-size: 12px; line-height: 1.9; }
+  footer a { color: var(--accent2); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7z"/><path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <h1>Policy <span>Fit</span> Checker</h1>
+    </div>
+    <div class="live"><span class="pulse"></span>Live · Google Sheets + weather, GDP &amp; country APIs</div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel">
+      <h2>Tell us about your life</h2>
+
+      <label for="stage">Life stage</label>
+      <select id="stage">
+        <option value="Student">Student</option>
+        <option value="Young Professional">Young Professional</option>
+        <option value="New Parent">New Parent</option>
+        <option value="Family">Family</option>
+        <option value="Self-Employed">Self-Employed</option>
+        <option value="Chronic Condition Management">Chronic Condition Management</option>
+        <option value="Senior">Senior</option>
+        <option value="General Adult">General Adult</option>
+      </select>
+
+      <label for="age">Age: <span class="age-label" id="ageLabel">30</span></label>
+      <input type="range" id="age" min="17" max="85" value="30">
+      <div class="range-val"><span>17</span><span>85</span></div>
+
+      <label>Insurance types (choose one or more)</label>
+      <div class="chips" id="typeChips">
+        <span class="chip" data-t="Income Protection">Income Protection</span>
+        <span class="chip" data-t="Health">Health</span>
+        <span class="chip" data-t="Life">Life</span>
+        <span class="chip" data-t="Critical Illness">Critical Illness</span>
+        <span class="chip" data-t="Auto">Auto</span>
+        <span class="chip" data-t="Home/Renters">Home/Renters</span>
+        <span class="chip" data-t="Travel">Travel</span>
+        <span class="chip" data-t="Pet">Pet</span>
+        <span class="chip" data-t="Business Liability">Business Liability</span>
+        <span class="chip" data-t="Student">Student</span>
+      </div>
+
+      <label for="budget">Max monthly budget (EUR)</label>
+      <input type="number" id="budget" min="0" value="60" placeholder="e.g. 60">
+
+      <label for="region">Region</label>
+      <select id="region">
+        <option value="Any">Any</option>
+        <option value="EU-Wide">EU-Wide</option>
+        <option value="Ireland">Ireland</option>
+        <option value="UK">UK</option>
+      </select>
+
+      <button class="primary" id="btn" disabled>Check my fit</button>
+      <div id="status"></div>
+    </aside>
+
+    <div class="main-col">
+      <section class="panel">
+        <div class="ctx-head">
+          <h2>Live location context</h2>
+          <select id="country">
+            <option value="IE">Ireland · Dublin</option>
+            <option value="GB">United Kingdom · London</option>
+            <option value="FR">France · Paris</option>
+            <option value="DE">Germany · Berlin</option>
+            <option value="ES">Spain · Madrid</option>
+            <option value="IT">Italy · Rome</option>
+            <option value="PT">Portugal · Lisbon</option>
+            <option value="NL">Netherlands · Amsterdam</option>
+            <option value="BE">Belgium · Brussels</option>
+            <option value="AT">Austria · Vienna</option>
+            <option value="CH">Switzerland · Bern</option>
+            <option value="SE">Sweden · Stockholm</option>
+            <option value="DK">Denmark · Copenhagen</option>
+            <option value="NO">Norway · Oslo</option>
+            <option value="FI">Finland · Helsinki</option>
+            <option value="PL">Poland · Warsaw</option>
+            <option value="CZ">Czechia · Prague</option>
+          </select>
+        </div>
+        <div class="ctx-grid" id="ctxGrid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="results-head">
+          <h2>Best-fit policies</h2>
+          <span class="count" id="count"></span>
+        </div>
+        <div id="results"><div class="empty">Enter your details and hit "Check my fit".</div></div>
+      </section>
+    </div>
+  </div>
+
+  <footer>
+    Live policy database: <a href="https://docs.google.com/spreadsheets/d/1ZzLcYTmbQ79kY4tHG52gfPWZdgsTdOs9yLBMZrFdcS8/edit" target="_blank">PFC Policy Database (Google Sheets)</a><br>
+    Context data: Open-Meteo weather · World Bank GDP per capita · Open-Meteo geocoding &amp; flagcdn
+  </footer>
+
+</div>
+
+<script>
+const SHEET_ID = "1ZzLcYTmbQ79kY4tHG52gfPWZdgsTdOs9yLBMZrFdcS8";
+const SHEET_JSONP = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json;responseHandler:pfcCallback";
+const SHEET_CSV = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv";
+
+const STAGE_TAGS = {
+  "Student": ["budget-friendly","low-commitment","student","under-26"],
+  "Young Professional": ["career-focused","flexible","no-dependents","digital-first"],
+  "Family": ["multi-person-cover","dependents","family-discount"],
+  "New Parent": ["family-protection","income-replacement","dependents","long-term"],
+  "Self-Employed": ["self-employed-friendly","flexible-income-cover","no-employer-benefits"],
+  "Chronic Condition Management": ["pre-existing-condition-friendly","ongoing-care","specialist-cover"],
+  "Senior": ["pre-existing-condition-friendly","fixed-income","over-60","simplified-underwriting"],
+  "General Adult": ["standard-cover","general-purpose"]
+};
+
+const COUNTRIES = {
+  IE: { name: "Ireland", capital: "Dublin", lat: 53.35, lon: -6.26, flag: "ie" },
+  GB: { name: "United Kingdom", capital: "London", lat: 51.51, lon: -0.13, flag: "gb" },
+  FR: { name: "France", capital: "Paris", lat: 48.86, lon: 2.35, flag: "fr" },
+  DE: { name: "Germany", capital: "Berlin", lat: 52.52, lon: 13.40, flag: "de" },
+  ES: { name: "Spain", capital: "Madrid", lat: 40.42, lon: -3.70, flag: "es" },
+  IT: { name: "Italy", capital: "Rome", lat: 41.90, lon: 12.50, flag: "it" },
+  PT: { name: "Portugal", capital: "Lisbon", lat: 38.72, lon: -9.14, flag: "pt" },
+  NL: { name: "Netherlands", capital: "Amsterdam", lat: 52.37, lon: 4.90, flag: "nl" },
+  BE: { name: "Belgium", capital: "Brussels", lat: 50.85, lon: 4.35, flag: "be" },
+  AT: { name: "Austria", capital: "Vienna", lat: 48.21, lon: 16.37, flag: "at" },
+  CH: { name: "Switzerland", capital: "Bern", lat: 46.95, lon: 7.45, flag: "ch" },
+  SE: { name: "Sweden", capital: "Stockholm", lat: 59.33, lon: 18.07, flag: "se" },
+  DK: { name: "Denmark", capital: "Copenhagen", lat: 55.68, lon: 12.57, flag: "dk" },
+  NO: { name: "Norway", capital: "Oslo", lat: 59.91, lon: 10.75, flag: "no" },
+  FI: { name: "Finland", capital: "Helsinki", lat: 60.17, lon: 24.94, flag: "fi" },
+  PL: { name: "Poland", capital: "Warsaw", lat: 52.23, lon: 21.01, flag: "pl" },
+  CZ: { name: "Czechia", capital: "Prague", lat: 50.08, lon: 14.44, flag: "cz" }
+};
+const WB = "https://api.worldbank.org/v2/country";
+const OM = "https://api.open-meteo.com/v1/forecast";
+
+const WMO = {
+  0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+  45: "Fog", 48: "Rime fog",
+  51: "Light drizzle", 53: "Drizzle", 55: "Dense drizzle",
+  56: "Freezing drizzle", 57: "Dense freezing drizzle",
+  61: "Light rain", 63: "Rain", 65: "Heavy rain",
+  66: "Freezing rain", 67: "Heavy freezing rain",
+  71: "Light snow", 73: "Snow", 75: "Heavy snow", 77: "Snow grains",
+  80: "Light showers", 81: "Rain showers", 82: "Violent showers",
+  85: "Snow showers", 86: "Heavy snow showers",
+  95: "Thunderstorm", 96: "Thunderstorm with hail", 99: "Thunderstorm with heavy hail"
+};
+
+let policies = [];
+
+/* ---------- generic fetch + JSONP loader (file:// safe) ---------- */
+async function loadJSON(url, jsonpParam) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return await res.json();
+  } catch (e) {
+    return await loadJSONP(url, jsonpParam);
+  }
+}
+function loadJSONP(url, param) {
+  return new Promise((resolve, reject) => {
+    const cb = "pfc_jp_" + Math.random().toString(36).slice(2);
+    const s = document.createElement("script");
+    let done = false;
+    function finish(fn, arg) { if (done) return; done = true; clearTimeout(timer); delete window[cb]; s.remove(); fn(arg); }
+    window[cb] = (data) => finish(resolve, data);
+    const timer = setTimeout(() => finish(reject, new Error("timed out")), 20000);
+    s.onerror = () => finish(reject, new Error("script load failed"));
+    s.src = url + (url.includes("?") ? "&" : "?") + param + "=" + cb;
+    document.head.appendChild(s);
+  });
+}
+
+/* ---------- policy sheet loaders ---------- */
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cur = "", inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') { if (text[i+1] === '"') { cur += '"'; i++; } else inQ = false; }
+      else cur += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ',') { row.push(cur); cur = ""; }
+      else if (c === "\n" || c === "\r") {
+        if (c === "\r" && text[i+1] === "\n") i++;
+        row.push(cur); cur = "";
+        if (row.some(x => x.trim() !== "")) rows.push(row);
+        row = [];
+      } else cur += c;
+    }
+  }
+  row.push(cur);
+  if (row.some(x => x.trim() !== "")) rows.push(row);
+  return rows;
+}
+
+function rowToPolicy(h, r) {
+  const p = {};
+  h.forEach((col, i) => {
+    const v = (r[i] || "").trim();
+    if (["min_age","max_age","monthly_premium_eur","coverage_amount_eur","deductible_eur","rating_out_of_5"].includes(col))
+      p[col] = parseFloat(v) || 0;
+    else if (col === "suitability_tags") p[col] = v.split(",").map(s => s.trim()).filter(Boolean);
+    else p[col] = v;
+  });
+  return p;
+}
+
+function gvizToPolicies(resp) {
+  if (!resp || resp.status !== "ok" || !resp.table)
+    throw new Error(resp && resp.errors ? resp.errors[0].message : "Unexpected response from Google Sheets");
+  const header = resp.table.cols.map(c => (c.label && c.label !== "") ? c.label : c.id);
+  const rows = resp.table.rows.map(r => r.c.map(cell => (cell && cell.v != null) ? String(cell.v) : ""));
+  return rows.map(r => rowToPolicy(header, r));
+}
+
+function loadViaJSONP() {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    let done = false;
+    function cleanup() { delete window.pfcCallback; s.remove(); }
+    window.pfcCallback = (json) => {
+      if (done) return; done = true; clearTimeout(timer); cleanup();
+      try { resolve(gvizToPolicies(json)); } catch (e) { reject(e); }
+    };
+    const timer = setTimeout(() => { if (!done) { done = true; cleanup(); reject(new Error("JSONP timeout")); } }, 20000);
+    s.onerror = () => { if (!done) { done = true; clearTimeout(timer); cleanup(); reject(new Error("JSONP script failed to load")); } };
+    s.src = SHEET_JSONP;
+    document.head.appendChild(s);
+  });
+}
+
+async function loadData() {
+  const status = document.getElementById("status");
+  status.innerHTML = '<span class="loading"><span class="spinner"></span>Syncing live policy data from Google Sheets…</span>';
+  try {
+    let loaded;
+    try {
+      loaded = await loadViaJSONP();
+    } catch (e1) {
+      const rows = parseCSV(await (await fetch(SHEET_CSV)).text());
+      const header = rows[0];
+      loaded = rows.slice(1).map(r => rowToPolicy(header, r));
+    }
+    policies = loaded;
+    status.innerHTML = policies.length + " policies synced from Google Sheets.";
+    document.getElementById("btn").disabled = false;
+  } catch (e) {
+    status.innerHTML = "";
+    document.getElementById("results").innerHTML =
+      '<div class="error">Could not reach Google Sheets: ' + e.message + '.<br>Make sure the sheet is shared as "Anyone with the link" (View), then try again.<br><br>Tip: if this persists when opening the file directly, serve it locally instead:<br><b>python -m http.server 8000</b> then open <b>http://localhost:8000/app.html</b></div>';
+    document.getElementById("btn").disabled = true;
+  }
+}
+
+/* ---------- fit scoring & results ---------- */
+function fitScore(p, opts) {
+  if (opts.age < p.min_age || opts.age > p.max_age) return null;
+  const pTags = p.suitability_tags || [];
+  const uTags = STAGE_TAGS[opts.stage] || [];
+  const overlap = pTags.filter(t => uTags.includes(t)).length;
+  const tagRatio = pTags.length ? overlap / pTags.length : 0;
+  const lifeStage = p.target_life_stage === opts.stage ? 30 : 0;
+  const tags = 25 * tagRatio;
+  const prem = p.monthly_premium_eur;
+  let budget = 25;
+  if (opts.budget > 0 && prem > opts.budget) budget = 25 * (opts.budget / prem);
+  let region = 0;
+  if (opts.region === "Any" || p.region === "EU-Wide" || p.region === opts.region) region = 10;
+  const rating = 10 * (p.rating_out_of_5 / 5);
+  const score = lifeStage + tags + budget + region + rating;
+  const maxBudgetShare = Math.min(1, opts.budget > 0 ? opts.budget / prem : 1);
+  return { score: Math.round(score * 100) / 100, maxBudgetShare };
+}
+
+function rank(policies, opts) {
+  return policies.map(p => ({ p, f: fitScore(p, opts) })).filter(x => x.f !== null)
+    .map(x => ({ ...x, final: x.f.score * (0.85 + 0.3 * x.f.maxBudgetShare) }))
+    .sort((a, b) => b.final - a.final);
+}
+
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+
+function render(cards) {
+  const el = document.getElementById("results");
+  document.getElementById("count").textContent = cards.length + " eligible policy" + (cards.length === 1 ? "" : "s");
+  if (!cards.length) { el.innerHTML = '<div class="empty">No policies match your profile. Widen your budget or age range.</div>'; return; }
+  el.innerHTML = "";
+  cards.slice(0, 12).forEach(({ p, f }, i) => {
+    const cls = f.score >= 70 ? "high" : f.score >= 45 ? "mid" : "low";
+    const top = i === 0 ? " top" : "";
+    const div = document.createElement("div");
+    div.className = "card" + top;
+    div.innerHTML = `
+      <div class="score-badge ${cls}">${Math.round(f.score)}</div>
+      <h3>${escapeHTML(p.policy_name)}</h3>
+      <div class="provider">${escapeHTML(p.provider_name)} · ${escapeHTML(p.region)}</div>
+      <div class="meta">
+        <span class="tag type">${escapeHTML(p.insurance_type)}</span>
+        <span class="tag">ages ${p.min_age}–${p.max_age}</span>
+        <span class="tag">${escapeHTML(p.target_life_stage)}</span>
+      </div>
+      <div class="premium">€${p.monthly_premium_eur.toFixed(2)}<small> /month</small></div>
+      <ul class="features">
+        ${(p.key_features.split(";").filter(Boolean).slice(0, 3).map(f => "<li>" + escapeHTML(f.trim()) + "</li>")).join("")}
+      </ul>
+      <div class="rating">★ <b>${p.rating_out_of_5.toFixed(1)}</b> · cover €${p.coverage_amount_eur.toLocaleString()} · excess €${p.deductible_eur.toLocaleString()}</div>
+    `;
+    el.appendChild(div);
+  });
+}
+
+/* ---------- live location context (weather / GDP / country) ---------- */
+const ctxGrid = document.getElementById("ctxGrid");
+
+function ctxCard(kickerHTML, bigHTML, subHTML, extra) {
+  return '<div class="ctx-card">' +
+    '<div class="kicker">' + kickerHTML + '</div>' +
+    '<div class="big">' + bigHTML + '</div>' +
+    '<div class="sub">' + subHTML + '</div>' +
+    (extra || "") + '</div>';
+}
+
+function gdpSparkline(values) {
+  if (!values || values.length < 2) return "";
+  const arr = values.slice().reverse();
+  const max = Math.max(...arr), min = Math.min(...arr);
+  const w = 200, h = 34, pad = 2;
+  const span = (max - min) || 1;
+  const bw = (w - arr.length * 3) / arr.length;
+  let bars = "";
+  arr.forEach((v, i) => {
+    const bh = Math.max(3, (v - min) / span * (h - 6));
+    bars += `<rect x="${i * (bw + 3)}" y="${h - bh - pad}" width="${bw}" height="${bh}" rx="2" fill="${i === arr.length - 1 ? "url(#gdpGrad)" : "rgba(255,255,255,.14)"}"/>`;
+  });
+  return '<svg class="spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
+    '<defs><linearGradient id="gdpGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ade80"/><stop offset="100%" stop-color="#4da3ff"/></linearGradient></defs>' +
+    bars + '</svg>';
+}
+
+function fmtNum(n) { return (n == null) ? "—" : Math.round(n).toLocaleString(); }
+
+async function loadLocation(key) {
+  const c = COUNTRIES[key];
+  if (!c) return;
+  ctxGrid.innerHTML = '<div class="ctx-card" style="grid-column:1/-1"><div class="ctx-loading"><span class="spinner"></span>Loading live context for ' + escapeHTML(c.name) + '…</div></div>';
+
+  const jobs = [
+    weatherJob(c),
+    countryJob(key),
+    gdpJob(key)
+  ];
+  const [weather, country, gdp] = await Promise.all(jobs.map(p => p.catch(e => ({ error: e.message }))));
+  ctxGrid.innerHTML = "";
+
+  if (weather && !weather.error) {
+    const code = weather.current.weather_code != null ? weather.current.weather_code : (weather.current_weather ? weather.current_weather.weathercode : null);
+    const temp = weather.current ? weather.current.temperature_2m : weather.current_weather.temperature;
+    const wind = weather.current ? weather.current.wind_speed_10m : weather.current_weather.windspeed;
+    const feel = weather.current && weather.current.apparent_temperature != null ? weather.current.apparent_temperature : null;
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard(
+      'Weather · ' + escapeHTML(c.capital),
+      Math.round(temp) + '°C',
+      (WMO[code] || "—") + ' · wind ' + Math.round(wind) + ' km/h' + (feel != null ? ' · feels like ' + Math.round(feel) + '°C' : ''),
+      ''
+    ));
+  } else {
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard("Weather", "—", '<div class="ctx-error">Unavailable</div>', ""));
+  }
+
+  if (country && !country.error) {
+    const info = country[1][0];
+    const flag = '<img class="flag" src="https://flagcdn.com/h24/' + c.flag + '.png" alt="' + escapeHTML(c.name) + '">';
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard(
+      flag + ' Country',
+      escapeHTML(info.name.value),
+      info.capitalCity + ' · ' + info.region.value + ' · ' + info.incomeLevel.value,
+      ''
+    ));
+  } else {
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard("Country", "—", '<div class="ctx-error">Unavailable</div>', ""));
+  }
+
+  if (gdp && !gdp.error) {
+    const data = gdp[1] || [];
+    const latest = data[0];
+    const vals = data.map(d => d.value).filter(v => v != null).reverse();
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard(
+      'GDP per capita',
+      latest ? '$' + fmtNum(latest.value) : "—",
+      latest ? 'current US$ · ' + latest.date + ' · last ' + data.length + ' years' : 'current US$',
+      gdpSparkline(vals)
+    ));
+  } else {
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard("GDP per capita", "—", '<div class="ctx-error">Unavailable</div>', ""));
+  }
+}
+
+function weatherJob(c) {
+  const url = OM + "?latitude=" + c.lat + "&longitude=" + c.lon +
+    "&current=temperature_2m,apparent_temperature,wind_speed_10m,weather_code";
+  return loadJSON(url, "callback");
+}
+function countryJob(key) {
+  return loadJSON(WB + "/" + key + "?format=json", "callback");
+}
+function gdpJob(key) {
+  return loadJSON(WB + "/" + key + "/indicator/NY.GDP.PCAP.CD?format=json&mrv=8", "callback");
+}
+
+/* ---------- wiring ---------- */
+const stageSel = document.getElementById("stage");
+const ageInput = document.getElementById("age");
+const budgetInput = document.getElementById("budget");
+const regionSel = document.getElementById("region");
+const countrySel = document.getElementById("country");
+const chips = document.querySelectorAll(".chip");
+
+ageInput.addEventListener("input", () => document.getElementById("ageLabel").textContent = ageInput.value);
+chips.forEach(c => c.addEventListener("click", () => c.classList.toggle("on")));
+countrySel.addEventListener("change", () => loadLocation(countrySel.value));
+
+document.getElementById("btn").addEventListener("click", () => {
+  if (!policies.length) return;
+  const types = [...chips].filter(c => c.classList.contains("on")).map(c => c.dataset.t);
+  const opts = {
+    stage: stageSel.value,
+    age: parseInt(ageInput.value, 10),
+    budget: parseFloat(budgetInput.value) || 0,
+    region: regionSel.value
+  };
+  const pool = types.length ? policies.filter(p => types.includes(p.insurance_type)) : policies;
+  render(rank(pool, opts));
+});
+
+loadData();
+loadLocation(countrySel.value);
+</script>
+</body>
+</html>

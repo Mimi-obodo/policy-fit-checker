@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Policy Fit Checker: insurance matched to your life, not sorted by price</title>
+<meta name="description" content="Five specialised AI agents work through the live policy catalog and hand your profile to each other, so you get a short, explained shortlist that actually fits your life.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<a class="skip-link" href="#intake">Skip to the matching flow</a>
+
+<header class="site-header">
+  <a class="wordmark" href="#top" aria-label="Policy Fit Checker home">
+    <span class="wordmark-mark">PFC</span>
+    <span>Policy Fit Checker</span>
+  </a>
+  <nav class="site-nav" aria-label="Primary">
+    <a href="#how">How it works</a>
+    <a class="nav-cta" href="#intake">Find your fit</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <!-- ================= HERO: the pipeline, idle and waiting ================= -->
+  <section class="hero">
+    <p class="hero-eyebrow">Five agents. One live catalog. One shortlist.</p>
+    <h1 class="hero-title">Insurance matched to your life, <em>not</em> sorted by price.</h1>
+    <p class="hero-lede">Describe yourself once. Nadia, Milo, Priya, Sasha and Callum hand your profile down the line, query the live policy catalog at the moment you ask, and hand you back two to four policies with a plain reason why each one fits.</p>
+
+    <div class="pipeline" id="pipeline" role="group" aria-label="The five agent pipeline">
+      <div class="pipeline-track" aria-hidden="true"><span class="pulse"></span></div>
+      <div class="node" data-node="nadia" aria-live="off">
+        <span class="node-idx">1</span>
+        <b>Nadia</b>
+        <i>Researcher</i>
+        <span class="node-status">Idle</span>
+      </div>
+      <div class="node" data-node="milo" aria-live="off">
+        <span class="node-idx">2</span>
+        <b>Milo</b>
+        <i>Designer</i>
+        <span class="node-status">Idle</span>
+      </div>
+      <div class="node" data-node="priya" aria-live="off">
+        <span class="node-idx">3</span>
+        <b>Priya</b>
+        <i>Maker</i>
+        <span class="node-status">Idle</span>
+      </div>
+      <div class="node" data-node="sasha" aria-live="off">
+        <span class="node-idx">4</span>
+        <b>Sasha</b>
+        <i>Communicator</i>
+        <span class="node-status">Idle</span>
+      </div>
+      <div class="node" data-node="callum" aria-live="off">
+        <span class="node-idx">5</span>
+        <b>Callum</b>
+        <i>Manager</i>
+        <span class="node-status">Idle</span>
+      </div>
+    </div>
+
+    <div class="pipeline-log" id="pipelineLog" aria-live="polite">
+      <p class="log-placeholder">The line is quiet. Tell us about your life and it comes alive.</p>
+    </div>
+
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#intake">Find your fit</a>
+      <a class="btn btn-ghost" href="#how">See how the agents work</a>
+    </div>
+    <p class="hero-note">Every policy you see is pulled live from the published catalog at the moment of your request. Nothing is stored or hardcoded on this page.</p>
+  </section>
+
+  <!-- ================= INTAKE: a short human conversation ================= -->
+  <section class="intake" id="intake" aria-labelledby="intake-heading">
+    <h2 class="section-title" id="intake-heading">Tell us about your life</h2>
+    <p class="section-lede">Six short questions. One at a time. Enough to change the match, nothing that doesn't.</p>
+
+    <form id="intakeForm" novalidate>
+      <div class="intake-card" role="group" aria-labelledby="stepTitle">
+        <div class="intake-stepbar" id="stepBar" aria-hidden="true">
+          <span data-step="0"></span><span data-step="1"></span><span data-step="2"></span><span data-step="3"></span><span data-step="4"></span><span data-step="5"></span>
+        </div>
+
+        <h3 class="intake-question" id="stepTitle"></h3>
+        <p class="intake-hint" id="stepHint"></p>
+        <div class="intake-control" id="stepControl"></div>
+
+        <div class="intake-nav">
+          <button type="button" class="btn btn-ghost" id="stepBack" hidden>Back</button>
+          <button type="button" class="btn btn-primary" id="stepNext">Continue</button>
+        </div>
+        <p class="intake-privacy">We never see your answers. They are used only in your browser, for this match, and never stored or sent anywhere except to query the public catalog.</p>
+      </div>
+    </form>
+  </section>
+
+  <!-- ================= RESULTS ================= -->
+  <section class="results" id="results" aria-labelledby="results-heading" hidden>
+    <h2 class="section-title" id="results-heading">Your shortlist</h2>
+    <div class="verdict" id="verdict" hidden></div>
+    <div class="cards" id="resultCards"></div>
+    <div class="empty-state" id="emptyState" hidden></div>
+    <div class="results-actions">
+      <button class="btn btn-ghost" id="runAgain">Run the pipeline again</button>
+    </div>
+  </section>
+
+  <!-- ================= HOW IT WORKS ================= -->
+  <section class="how" id="how" aria-labelledby="how-heading">
+    <h2 class="section-title" id="how-heading">How the five agents work</h2>
+    <p class="section-lede">A small organisation, visible while it works. Each agent does one specialist job and hands the result to the next.</p>
+
+    <ol class="agents-list">
+      <li data-agent="nadia">
+        <h3>Nadia <span>Researcher</span></h3>
+        <p>Queries the live policy catalog at the moment you ask, filters it against your age band and life stage, and names the gaps honestly.</p>
+      </li>
+      <li data-agent="milo">
+        <h3>Milo <span>Designer</span></h3>
+        <p>Decides how the candidates should be compared, and scores every eligible policy against what actually matters for your profile.</p>
+      </li>
+      <li data-agent="priya">
+        <h3>Priya <span>Maker</span></h3>
+        <p>Builds your shortlist from the real catalog fields: name, provider, premium, coverage. Nothing is invented; if the data is missing, she says so.</p>
+      </li>
+      <li data-agent="sasha">
+        <h3>Sasha <span>Communicator</span></h3>
+        <p>Writes the one-line reason under each policy in plain language, grounded in the actual numbers and the actual fine print.</p>
+      </li>
+      <li data-agent="callum">
+        <h3>Callum <span>Manager</span></h3>
+        <p>Reviews the handoffs, keeps the honest empty state visible when the catalog has nothing good, and synthesises the final recommendation.</p>
+      </li>
+    </ol>
+
+    <p class="how-note">This page runs on a static site with no backend. The agents' reasoning is deterministic and grounded in the live catalog, so the demo always works; the optional live-LLM variant is documented in the repo.</p>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p>Policy Fit Checker: five-agent pipeline, live Google Sheets catalog, static GitHub Pages.</p>
+  <p class="footer-meta">No secrets here. Everything this page needs is fetched client-side at the moment of use.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
