@@ -1295,6 +1295,27 @@ body { animation: pageIn 0.6s var(--ease); }
   transition: color 0.15s;
 }
 .cb-close:hover { color: var(--parchment); }
+.cb-max {
+  background: transparent; border: none; color: var(--slate);
+  cursor: pointer; padding: 6px; line-height: 1;
+  transition: color 0.15s;
+}
+.cb-max:hover { color: var(--parchment); }
+.cb-max-icon { display: block; }
+.cb-max-compress { display: none; }
+.chatbot-panel.full .cb-max-expand { display: none; }
+.chatbot-panel.full .cb-max-compress { display: block; }
+
+/* Full-screen chat */
+.chatbot-panel.full {
+  left: 0; top: 0; right: 0; bottom: 0;
+  width: 100vw; height: 100dvh; max-width: none; max-height: none;
+  border-radius: 0; border: none; z-index: 95;
+}
+.chatbot-panel.full .cb-log { padding: 20px 8vw; }
+.chatbot-panel.full .cb-log .chat-line { font-size: 15px; max-width: 780px; margin: 0 auto; }
+.chatbot-panel.full .cb-form, .chatbot-panel.full .cb-suggestions { padding-left: 8vw; padding-right: 8vw; }
+.chatbot-panel.full .cb-suggestions, .chatbot-panel.full .cb-form { max-width: 780px; margin-left: auto; margin-right: auto; width: 100%; box-sizing: border-box; }
 
 .cb-agents {
   display: flex; flex-wrap: wrap; gap: 6px;

@@ -1178,6 +1178,14 @@ function initChatbot() {
   });
   var closeBtn = $("#cbClose");
   if (closeBtn) closeBtn.addEventListener("click", close);
+  var maxBtn = $("#cbMaxBtn");
+  if (maxBtn) {
+    maxBtn.addEventListener("click", function () {
+      var full = panel.classList.toggle("full");
+      maxBtn.setAttribute("aria-label", full ? "Restore chat window" : "Enlarge chat to full screen");
+      maxBtn.setAttribute("aria-pressed", String(full));
+    });
+  }
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && panel.classList.contains("open")) close();
   });

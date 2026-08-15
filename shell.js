@@ -143,6 +143,10 @@
       '<div class="cb-head">' +
         '<span class="cb-head-mark">PFC</span>' +
         '<div class="cb-head-txt"><b>Policy Fit Checker</b><span class="cb-head-sub"><span class="cb-live-dot" aria-hidden="true"></span> five agents &middot; live catalog</span></div>' +
+        '<button type="button" class="cb-max" id="cbMaxBtn" aria-label="Enlarge chat to full screen" aria-pressed="false">' +
+          '<svg class="cb-max-icon cb-max-expand" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>' +
+          '<svg class="cb-max-icon cb-max-compress" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h5V3M21 8h-5V3M3 16h5v5M21 16h-5v5"/></svg>' +
+        "</button>" +
         '<button type="button" class="cb-close" id="cbClose" aria-label="Close chat">&times;</button>' +
       "</div>" +
       '<div class="cb-agents" id="cbAgents" role="group" aria-label="Choose an agent"></div>' +
