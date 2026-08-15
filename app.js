@@ -571,3 +571,449 @@ $("#runAgain").addEventListener("click", function () {
    -------------------------------------------------------------------------- */
 initNodes();
 setStep(0);
+
+/* ==========================================================================
+   Vanilla rebuild additions (master brief): waves, previews, personas, chat
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Flip-card icons (lucide-style inline SVGs, no external dependency)
+   -------------------------------------------------------------------------- */
+var FLIP_ICONS = [
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 2a2 2 0 0 0-2 2v5H4a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h5v5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-5h5a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2h-5V4a2 2 0 0 0-2-2h-2z"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="6" rx="2"/><path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M22 12h-7l-1 2h-4l-1-2H2"/></svg>'
+];
+function initFlipIcons() {
+  var icons = document.querySelectorAll(".flip-icon");
+  icons.forEach(function (span) {
+    var idx = parseInt(span.getAttribute("data-icon"), 10);
+    if (!isNaN(idx) && FLIP_ICONS[idx]) span.innerHTML = FLIP_ICONS[idx];
+  });
+}
+
+/* --------------------------------------------------------------------------
+   Simplex noise 2D (seeded permutation; Gustavson-style algorithm)
+   -------------------------------------------------------------------------- */
+function makeNoise2D(seed) {
+  var perm = new Uint8Array(512), p = [], i;
+  for (i = 0; i < 256; i++) p.push(i);
+  var s = seed >>> 0;
+  function rand() { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }
+  for (i = 255; i > 0; i--) {
+    var j = Math.floor(rand() * (i + 1)), t = p[i]; p[i] = p[j]; p[j] = t;
+  }
+  for (i = 0; i < 512; i++) perm[i] = p[i & 255];
+  var F2 = 0.5 * (Math.sqrt(3) - 1), G2 = (3 - Math.sqrt(3)) / 6;
+  var grad = [[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]];
+  return function (xin, yin) {
+    var n0 = 0, n1 = 0, n2 = 0;
+    var f = (xin + yin) * F2;
+    var gi = Math.floor(xin + f), gj = Math.floor(yin + f);
+    var t = (gi + gj) * G2;
+    var x0 = xin - (gi - t), y0 = yin - (gj - t);
+    var i1 = x0 > y0 ? 1 : 0, j1 = x0 > y0 ? 0 : 1;
+    var x1 = x0 - i1 + G2, y1 = y0 - j1 + G2;
+    var x2 = x0 - 1 + 2 * G2, y2 = y0 - 1 + 2 * G2;
+    var ii = gi & 255, jj = gj & 255;
+    var g0 = grad[perm[ii + perm[jj]] % 8];
+    var t0 = 0.5 - x0 * x0 - y0 * y0;
+    if (t0 >= 0) { t0 *= t0; n0 = t0 * t0 * (g0[0] * x0 + g0[1] * y0); }
+    var g1 = grad[perm[ii + i1 + perm[jj + j1]] % 8];
+    var t1 = 0.5 - x1 * x1 - y1 * y1;
+    if (t1 >= 0) { t1 *= t1; n1 = t1 * t1 * (g1[0] * x1 + g1[1] * y1); }
+    var g2 = grad[perm[ii + 1 + perm[jj + 1]] % 8];
+    var t2 = 0.5 - x2 * x2 - y2 * y2;
+    if (t2 >= 0) { t2 *= t2; n2 = t2 * t2 * (g2[0] * x2 + g2[1] * y2); }
+    return 70 * (n0 + n1 + n2);
+  };
+}
+
+/* --------------------------------------------------------------------------
+   Wave background (vanilla port of the wave-background component)
+   -------------------------------------------------------------------------- */
+function initWaves(container) {
+  if (!container) return;
+  if (typeof requestAnimationFrame === "undefined") return;
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  var NS = "http://www.w3.org/2000/svg";
+  var svg = document.createElementNS(NS, "svg");
+  container.appendChild(svg);
+
+  var noise = makeNoise2D(42);
+  var mouse = { x: -10, y: 0, lx: 0, ly: 0, sx: 0, sy: 0, v: 0, vs: 0, a: 0, set: false };
+  var lines = [], paths = [], raf = null;
+
+  function setSize() {
+    var w = container.clientWidth || 1200;
+    var h = container.clientHeight || 640;
+    svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+    svg.style.width = w + "px";
+    svg.style.height = h + "px";
+    buildLines(w, h);
+  }
+
+  function buildLines(w, h) {
+    lines = [];
+    paths.forEach(function (ph) { ph.remove(); });
+    paths = [];
+    var xGap = 26, yGap = 18;
+    var totalLines = Math.ceil(w / xGap);
+    var totalPoints = Math.ceil(h / yGap);
+    var xStart = (w - xGap * totalLines) / 2;
+    var yStart = (h - yGap * totalPoints) / 2;
+    for (var i = 0; i < totalLines; i++) {
+      var pts = [];
+      for (var j = 0; j < totalPoints; j++) {
+        pts.push({ x: xStart + xGap * i, y: yStart + yGap * j, wx: 0, wy: 0, cx: 0, cy: 0, vx: 0, vy: 0 });
+      }
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute("class", "wave-line");
+      path.setAttribute("fill", "none");
+      svg.appendChild(path);
+      paths.push(path);
+      lines.push(pts);
+    }
+  }
+
+  function onMove(e) {
+    var r = container.getBoundingClientRect();
+    mouse.x = e.clientX - r.left;
+    mouse.y = e.clientY - r.top;
+    if (!mouse.set) { mouse.sx = mouse.x; mouse.sy = mouse.y; mouse.lx = mouse.x; mouse.ly = mouse.y; mouse.set = true; }
+  }
+
+  function tick(t) {
+    var time = t * 0.001;
+    mouse.sx += (mouse.x - mouse.sx) * 0.1;
+    mouse.sy += (mouse.y - mouse.sy) * 0.1;
+    var dx = mouse.x - mouse.lx, dy = mouse.y - mouse.ly;
+    var d = Math.hypot(dx, dy);
+    mouse.vs += (d - mouse.vs) * 0.1;
+    mouse.vs = Math.min(100, mouse.vs);
+    mouse.lx = mouse.x;
+    mouse.ly = mouse.y;
+    mouse.a = Math.atan2(dy, dx);
+
+    for (var li = 0; li < lines.length; li++) {
+      var pts = lines[li];
+      var dStr = "M ";
+      for (var k = 0; k < pts.length; k++) {
+        var p = pts[k];
+        var move = noise((p.x + time * 8) * 0.003, (p.y + time * 3) * 0.002) * 8;
+        p.wx = Math.cos(move) * 12;
+        p.wy = Math.sin(move) * 6;
+        var mdx = p.x - mouse.sx, mdy = p.y - mouse.sy;
+        var md = Math.hypot(mdx, mdy);
+        var l = Math.max(175, mouse.vs);
+        if (md < l) {
+          var f = Math.cos(md * 0.001) * (1 - md / l);
+          p.vx += Math.cos(mouse.a) * f * l * mouse.vs * 0.00035;
+          p.vy += Math.sin(mouse.a) * f * l * mouse.vs * 0.00035;
+        }
+        p.vx += (0 - p.cx) * 0.01;
+        p.vy += (0 - p.cy) * 0.01;
+        p.vx *= 0.95; p.vy *= 0.95;
+        p.cx += p.vx; p.cy += p.vy;
+        p.cx = Math.min(50, Math.max(-50, p.cx));
+        p.cy = Math.min(50, Math.max(-50, p.cy));
+        if (k === 0) dStr += (p.x + p.wx) + " " + (p.y + p.wy);
+        else dStr += " L " + (p.x + p.wx + p.cx) + " " + (p.y + p.wy + p.cy);
+      }
+      if (paths[li]) paths[li].setAttribute("d", dStr);
+    }
+    raf = requestAnimationFrame(tick);
+  }
+
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("resize", setSize);
+  setSize();
+  raf = requestAnimationFrame(tick);
+}
+
+/* --------------------------------------------------------------------------
+   Hover preview cards (vanilla port of the hover-preview component)
+   -------------------------------------------------------------------------- */
+var PREVIEWS = {
+  "life-aviva":     { image: "https://picsum.photos/seed/pfc-life-aviva/560/320", title: "Aviva", subtitle: "A real insurer offering level and decreasing life cover. Paraphrased here, never quoted." },
+  "life-lg":        { image: "https://picsum.photos/seed/pfc-life-lg/560/320", title: "Legal & General", subtitle: "A real insurer in the UK life market, used as an illustrative example." },
+  "life-zurich":    { image: "https://picsum.photos/seed/pfc-life-zurich/560/320", title: "Zurich", subtitle: "A real insurer active in life cover across Europe." },
+  "health-vhi":     { image: "https://picsum.photos/seed/pfc-health-vhi/560/320", title: "Vhi", subtitle: "A real Irish health insurer; PFC paraphrases how the market approaches waiting periods." },
+  "health-laya":    { image: "https://picsum.photos/seed/pfc-health-laya/560/320", title: "Laya", subtitle: "A real Irish health insurer with private-hospital and day-to-day plans." },
+  "health-ilh":     { image: "https://picsum.photos/seed/pfc-health-ilh/560/320", title: "Irish Life Health", subtitle: "A real Irish health insurer; an example of the private medical market." },
+  "health-bupa":    { image: "https://picsum.photos/seed/pfc-health-bupa/560/320", title: "Bupa", subtitle: "A real international health insurer, used only as an illustrative example." },
+  "income-aviva":   { image: "https://picsum.photos/seed/pfc-income-aviva/560/320", title: "Aviva", subtitle: "A real insurer offering income protection with deferred-period choices." },
+  "income-lloyds":  { image: "https://picsum.photos/seed/pfc-income-lloyds/560/320", title: "Royal London", subtitle: "A real mutual insurer in the income-protection market." },
+  "income-legal":   { image: "https://picsum.photos/seed/pfc-income-legal/560/320", title: "Legal & General", subtitle: "A real insurer known for income protection definitions of incapacity." },
+  "home-axa":       { image: "https://picsum.photos/seed/pfc-home-axa/560/320", title: "AXA", subtitle: "A real insurer offering buildings and contents cover across Europe." },
+  "home-zurich":    { image: "https://picsum.photos/seed/pfc-home-zurich/560/320", title: "Zurich", subtitle: "A real insurer in the home and contents market." },
+  "home-aviva":     { image: "https://picsum.photos/seed/pfc-home-aviva/560/320", title: "Aviva", subtitle: "A real insurer with combined buildings and contents options." },
+  "travel-allianz": { image: "https://picsum.photos/seed/pfc-travel-allianz/560/320", title: "Allianz", subtitle: "A real travel insurer; single-trip and annual multi-trip are the market standards." },
+  "travel-axa":     { image: "https://picsum.photos/seed/pfc-travel-axa/560/320", title: "AXA", subtitle: "A real travel insurer; pre-existing condition declarations are normal." },
+  "auto-aviva":     { image: "https://picsum.photos/seed/pfc-auto-aviva/560/320", title: "Aviva", subtitle: "A real motor insurer with telematics options for younger drivers." },
+  "auto-axa":       { image: "https://picsum.photos/seed/pfc-auto-axa/560/320", title: "AXA", subtitle: "A real motor insurer; comprehensive cover and no-claims protection are standard." },
+  "auto-allianz":   { image: "https://picsum.photos/seed/pfc-auto-allianz/560/320", title: "Allianz", subtitle: "A real motor insurer used as an illustrative example of the market." },
+  "biz-allianz":    { image: "https://picsum.photos/seed/pfc-biz-allianz/560/320", title: "Allianz", subtitle: "A real insurer of business and liability lines." },
+  "biz-aviva":      { image: "https://picsum.photos/seed/pfc-biz-aviva/560/320", title: "Aviva", subtitle: "A real insurer offering employers' and public liability cover." }
+};
+
+function initPreviews() {
+  var card = document.createElement("div");
+  card.className = "hover-preview";
+  card.innerHTML = '<img alt=""><div class="hp-title"></div><div class="hp-subtitle"></div>';
+  document.body.appendChild(card);
+  var img = card.querySelector("img"), title = card.querySelector(".hp-title"), sub = card.querySelector(".hp-subtitle");
+  var visible = false;
+
+  function position(e) {
+    var w = card.offsetWidth || 300, h = card.offsetHeight + 20;
+    var x = e.clientX - w / 2, y = e.clientY - h;
+    x = Math.min(Math.max(16, x), window.innerWidth - w - 16);
+    if (y < 16) y = e.clientY + 20;
+    card.style.left = x + "px";
+    card.style.top = y + "px";
+  }
+
+  document.querySelectorAll(".pv[data-preview]").forEach(function (el) {
+    el.addEventListener("mouseenter", function (e) {
+      var p = PREVIEWS[el.getAttribute("data-preview")];
+      if (!p) return;
+      img.src = p.image; img.alt = p.title;
+      title.textContent = p.title; sub.textContent = p.subtitle;
+      visible = true; card.classList.add("visible"); position(e);
+    });
+    el.addEventListener("mousemove", function (e) { if (visible) position(e); });
+    el.addEventListener("mouseleave", function () { visible = false; card.classList.remove("visible"); });
+  });
+}
+
+/* --------------------------------------------------------------------------
+   Reveal on scroll
+   -------------------------------------------------------------------------- */
+function initReveal() {
+  var els = document.querySelectorAll(".reveal");
+  if (!("IntersectionObserver" in window)) {
+    els.forEach(function (e) { e.classList.add("in"); });
+    return;
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); }
+    });
+  }, { threshold: 0.12 });
+  els.forEach(function (e) { io.observe(e); });
+}
+
+/* --------------------------------------------------------------------------
+   Persona panels: click any agent node to meet it
+   -------------------------------------------------------------------------- */
+var PERSONAS = {
+  nadia: {
+    num: 1, name: "Nadia", role: "Researcher",
+    short: "Queries the live published catalog at the moment of use, filters it against your age band and region, and reports gaps in the data honestly.",
+    voice: "Precise, evidence-first, quietly blunt. Nadia calls thin data thin data and never pads a finding.",
+    boundary: "Nadia does not recommend. She researches, filters and reports what the catalog actually contains."
+  },
+  milo: {
+    num: 2, name: "Milo", role: "Designer",
+    short: "Decides how candidates should be compared and scores every eligible policy on a 100-point fit model, including a fine-print scan for your health considerations.",
+    voice: "Methodical and audit-minded. Milo wants the scoring to be checkable by anyone.",
+    boundary: "Milo scores; he does not market. A low score is reported as a low score."
+  },
+  priya: {
+    num: 3, name: "Priya", role: "Maker",
+    short: "Builds the shortlist from the real fields in the live catalog: name, provider, premium, coverage. Nothing is invented; missing data is named as missing.",
+    voice: "Careful, builder's honesty. Priya would rather ship one true card than four dressed-up ones.",
+    boundary: "Priya never fabricates a field. If the catalog lacks it, the card says so."
+  },
+  sasha: {
+    num: 4, name: "Sasha", role: "Communicator",
+    short: "Writes the plain-language reason under every policy, grounded in the actual numbers and the actual exclusions.",
+    voice: "Warm, exact, no jargon. Sasha writes the fine print the way you would explain it to a friend.",
+    boundary: "Sasha explains; she does not persuade you to buy."
+  },
+  callum: {
+    num: 5, name: "Callum", role: "Manager",
+    short: "Reviews every handoff, keeps the honest empty state visible when nothing fits, and synthesises the final recommendation.",
+    voice: "Calm, decisive, responsible for the whole line. Callum signs the final answer.",
+    boundary: "Callum never forces a match. If the catalog has nothing good, you hear that clearly."
+  }
+};
+
+function initPersonas() {
+  var overlay = document.createElement("div");
+  overlay.className = "persona-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-label", "Agent profile");
+  overlay.innerHTML =
+    '<div class="persona-panel">' +
+      '<button class="persona-close" type="button" aria-label="Close">&times;</button>' +
+      '<span class="node-idx"></span>' +
+      "<h3></h3><p class=\"role\"></p><p class=\"short\"></p>" +
+      "<p class=\"voice\"><b>Voice:</b> <span></span></p>" +
+      "<p><b>Boundary:</b> <span></span></p>" +
+    "</div>";
+  document.body.appendChild(overlay);
+  var idx = overlay.querySelector(".node-idx");
+  var name = overlay.querySelector("h3");
+  var role = overlay.querySelector(".role");
+  var short = overlay.querySelector(".short");
+  var voice = overlay.querySelector(".voice span");
+  var bound = overlay.querySelector("p:last-child span");
+  var closeBtn = overlay.querySelector(".persona-close");
+
+  function open(key) {
+    var p = PERSONAS[key];
+    if (!p) return;
+    idx.textContent = p.num;
+    name.textContent = p.name;
+    role.textContent = p.role;
+    short.textContent = p.short;
+    voice.textContent = p.voice;
+    bound.textContent = p.boundary;
+    overlay.classList.add("open");
+    closeBtn.focus();
+  }
+  function close() { overlay.classList.remove("open"); }
+
+  document.querySelectorAll("[data-persona]").forEach(function (el) {
+    el.addEventListener("click", function () { open(el.getAttribute("data-persona")); });
+  });
+  closeBtn.addEventListener("click", close);
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+}
+
+/* --------------------------------------------------------------------------
+   Chat with the agents (deterministic mode, grounded in personas + live data)
+   -------------------------------------------------------------------------- */
+function whoTag(name) { return '<span class="chat-who">' + name + ":</span> "; }
+
+function chatAddLine(cls, html) {
+  var log = $("#chatLog");
+  var el = document.createElement("p");
+  el.className = "chat-line " + cls;
+  el.innerHTML = html;
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+}
+
+var chatTyping = false;
+function chatSend(q) {
+  if (chatTyping) return;
+  chatAddLine("user", esc(q));
+  chatTyping = true;
+  var typing = document.createElement("p");
+  typing.className = "chat-line typing";
+  typing.textContent = "The team is thinking\u2026";
+  var log = $("#chatLog");
+  log.appendChild(typing);
+  log.scrollTop = log.scrollHeight;
+  botAnswer(q).then(function (reply) {
+    typing.remove();
+    chatAddLine("bot", reply);
+    chatTyping = false;
+  }).catch(function () {
+    typing.remove();
+    chatAddLine("bot", whoTag("Callum") + " Something interrupted the live query. I will not invent an answer; try again in a moment.");
+    chatTyping = false;
+  });
+}
+
+async function botMatchAnswer(profile) {
+  var catalog = await fetchCatalog();
+  var nadia = nadiaResearch(catalog, profile);
+  var scored = miloDesign(nadia.eligible, profile);
+  if (!scored.length) {
+    return whoTag("Callum") + " Nothing in the live catalog fits that profile well right now. That is a real gap, not a missing feature. Try widening the budget or age range.";
+  }
+  var top = scored[0], second = scored[1];
+  var html = whoTag("Callum") + " I ran your question through the real pipeline against the live catalog, just now. ";
+  html += "<b>" + esc(top.policy.policy_name) + "</b> (" + esc(top.policy.provider_name) + ", " + esc(top.policy.policy_id) + ") fits best: " + top.score.reasons.slice(0, 2).map(esc).join("; ") + ".";
+  if (second) {
+    html += " Runner-up: <b>" + esc(second.policy.policy_name) + "</b> at " + money(second.policy.monthly_premium_eur) + "/mo.";
+  }
+  html += " These are live entries, not remembered figures.";
+  return html;
+}
+
+async function botAnswer(q) {
+  var t = q.toLowerCase();
+  function has(words) { return words.some(function (w) { return t.indexOf(w) !== -1; }); }
+
+  var profile = null;
+  if (has(["student", "school", "university", "college", "under 26", "22"])) {
+    profile = { stage: "Student", age: 22, dependants: "None", condition: "None", budget: 40, region: "Any" };
+  } else if (has(["senior", "retir", "over 60", "60+"])) {
+    profile = { stage: "Senior", age: 68, dependants: "None", condition: "None", budget: 60, region: "Any" };
+  } else if (has(["pre-existing", "chronic", "diabetes", "asthma", "condition", "health"])) {
+    profile = { stage: "Chronic Condition Management", age: 45, dependants: "None", condition: "Chronic condition", budget: 50, region: "Any" };
+  } else if (has(["family", "children", "kids", "new parent", "dependants"])) {
+    profile = { stage: "New Parent", age: 32, dependants: "Children", condition: "None", budget: 60, region: "Any" };
+  }
+
+  if (profile && has(["policy", "fit", "which", "best", "recommend", "match", "premium", "price", "plan", "cover", "suit"])) {
+    return await botMatchAnswer(profile);
+  }
+
+  if (has(["nadia"])) return whoTag("Nadia") + " I query the published catalog live at the moment of your question, no cached numbers. Give me a stage, age, region and budget and I will tell you what is really there, gaps included.";
+  if (has(["milo", "score", "compare", "rank"])) return whoTag("Milo") + " I score every eligible policy on a 100-point fit model: life stage 25, health fit 30, budget 20, region 10, rating 10, coverage 5. The weights appear on every card so the judgement stays auditable.";
+  if (has(["priya", "build", "shortlist", "card"])) return whoTag("Priya") + " I build the shortlist from the real fields in the live catalog: name, provider, premium, coverage. If a field is missing or a policy is weak, I say so. Nothing on a card is invented.";
+  if (has(["sasha", "why", "explain", "plain", "understand"])) return whoTag("Sasha") + " I write the reason under each policy in plain language, grounded in the actual numbers and the actual exclusions. If a policy excludes something you told us matters, you will read it in my line before you pay a premium.";
+  if (has(["callum", "manager", "team", "orchestrat"])) return whoTag("Callum") + " I review every handoff: Nadia researched it, Milo scored it, Priya built it, Sasha explained it. My job is the final judgement, and the honest empty state when nothing fits.";
+  if (has(["hello", "hi", "hey", "who are", "what can"])) return whoTag("Callum") + " Hello. I am Callum, the manager of the team. Ask me which policy fits a student, what data we use, or how we treat pre-existing conditions, or name an agent and I will route you.";
+  if (has(["data", "source", "where", "how do you know"])) return whoTag("Priya") + " All policy data is pulled live from a published Google Sheet catalog at the moment of use. This page holds no hardcoded premiums or names. Static text around it, like the education notes, is clearly our own writing, not catalog data.";
+  return whoTag("Callum") + " I heard you, though the question does not yet point at anything specific. I am best at policy fits, the data we use, or one of the five of us by name. Try \u201cwhich policy fits a student in Ireland\u201d, or ask Sasha to explain an exclusion.";
+}
+
+function initChat() {
+  $("#chatForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var inp = $("#chatInput");
+    var q = inp.value.trim();
+    if (!q) return;
+    inp.value = "";
+    chatSend(q);
+  });
+  document.querySelectorAll(".chip").forEach(function (c) {
+    c.addEventListener("click", function () { chatSend(c.getAttribute("data-q")); });
+  });
+}
+
+/* --------------------------------------------------------------------------
+   Waitlist form (demo only, nothing stored or sent)
+   -------------------------------------------------------------------------- */
+function initWaitlist() {
+  $("#waitlistForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var email = $("#waitlistEmail").value.trim();
+    var status = $("#waitlistStatus");
+    if (!email || email.indexOf("@") < 1) {
+      status.style.color = "var(--bad)";
+      status.textContent = "Please enter a valid email address.";
+      return;
+    }
+    status.style.color = "var(--ok)";
+    status.textContent = "You are on the waitlist. (Demo only: nothing is stored or sent.)";
+    $("#waitlistEmail").value = "";
+  });
+}
+
+/* --------------------------------------------------------------------------
+   Boot enhancements
+   -------------------------------------------------------------------------- */
+initFlipIcons();
+initReveal();
+initPersonas();
+initPreviews();
+initWaves($("#heroWaves"));
+initChat();
+initWaitlist();
