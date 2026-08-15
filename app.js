@@ -1065,17 +1065,17 @@ async function botAnswer(q) {
     return await botMatchAnswer(profile);
   }
   if (has(["premium", "price", "cost", "calculate", "priced"])) {
-    return whoTag("Milo") + " Pricing is not guessed here. Every premium on a card is the live monthly_premium_eur field in the catalog. My budget weight (20/100) checks it against the budget you told us \u2014 if a policy exceeds it, its score drops proportionally. No private comparison table, no markup.";
+    return whoTag("Milo") + " Every premium on a card is the catalog\u2019s monthly_premium_eur. My budget weight (20/100) checks it against your budget \u2014 over it, the score drops. No markup.";
   }
 
-  if (has(["nadia"])) return whoTag("Nadia") + " I query the published catalog live at the moment of your question, no cached numbers. Give me a stage, age, region and budget and I will tell you what is really there, gaps included.";
-  if (has(["milo", "score", "compare", "rank"])) return whoTag("Milo") + " I score every eligible policy on a 100-point fit model: life stage 25, health fit 30, budget 20, region 10, rating 10, coverage 5. The weights appear on every card so the judgement stays auditable.";
-  if (has(["priya", "build", "shortlist", "card"])) return whoTag("Priya") + " I build the shortlist from the real fields in the live catalog: name, provider, premium, coverage. If a field is missing or a policy is weak, I say so. Nothing on a card is invented.";
-  if (has(["sasha", "why", "explain", "plain", "understand"])) return whoTag("Sasha") + " I write the reason under each policy in plain language, grounded in the actual numbers and the actual exclusions. If a policy excludes something you told us matters, you will read it in my line before you pay a premium.";
-  if (has(["callum", "manager", "team", "orchestrat"])) return whoTag("Callum") + " I review every handoff: Nadia researched it, Milo scored it, Priya built it, Sasha explained it. My job is the final judgement, and the honest empty state when nothing fits.";
-  if (has(["hello", "hi", "hey", "who are", "what can"])) return whoTag("Callum") + " Hello. I am Callum, the manager of the team. Ask me which policy fits a student, what data we use, or how we treat pre-existing conditions, or name an agent and I will route you.";
-  if (has(["data", "source", "where", "how do you know"])) return whoTag("Priya") + " I match you against the live policy catalog at the moment you ask \u2014 every premium and name on a card comes straight from there.";
-  return whoTag("Callum") + " I heard you, though the question does not yet point at anything specific. I am best at policy fits, the data we use, or one of the five of us by name. Try \u201cwhich policy fits a student in Ireland under 40 a month\u201d, or ask Sasha to explain an exclusion.";
+  if (has(["nadia"])) return whoTag("Nadia") + " I query the live catalog at the moment you ask. Give me a stage, age, region and budget and I\u2019ll report what\u2019s really there.";
+  if (has(["milo", "score", "compare", "rank"])) return whoTag("Milo") + " I score every eligible policy out of 100 \u2014 stage 25, health 30, budget 20, region 10, rating 10, coverage 5. The weights are on every card.";
+  if (has(["priya", "build", "shortlist", "card"])) return whoTag("Priya") + " I build the shortlist from the catalog\u2019s real fields: name, provider, premium, coverage. Nothing is invented.";
+  if (has(["sasha", "why", "explain", "plain", "understand"])) return whoTag("Sasha") + " I explain each pick in plain language, and I flag exclusions that matter to you.";
+  if (has(["callum", "manager", "team", "orchestrat"])) return whoTag("Callum") + " I review every handoff \u2014 Nadia researched, Milo scored, Priya built, Sasha explained \u2014 and give the final judgement.";
+  if (has(["hello", "hi", "hey", "who are", "what can"])) return whoTag("Callum") + " Hi! Tell me a bit about you \u2014 student, family, self-employed, and a budget \u2014 and I\u2019ll pull real policies for you.";
+  if (has(["data", "source", "where", "how do you know"])) return whoTag("Priya") + " I match you against the live catalog at the moment you ask.";
+  return whoTag("Callum") + " Could you say who you\u2019re buying for \u2014 student, family, self-employed \u2014 and roughly what budget? I\u2019ll match real policies from the catalog.";
 }
 
 function initChat() {
@@ -1157,7 +1157,7 @@ function initChatbot() {
     panel.setAttribute("aria-hidden", "false");
     fab.setAttribute("aria-expanded", "true");
     if (firstOpen) {
-      addLine("bot", whoTag("Callum") + " Hello, I am Callum. Ask us anything in plain words \u2014 which policy fits a family in Ireland, what an excess means, how we score, or talk to Nadia, Milo, Priya, Sasha or me by name. The team queries the live catalog every single time.");
+      addLine("bot", whoTag("Callum") + " Hi, I\u2019m Callum. Tell me who you\u2019re buying for \u2014 student, family, self-employed \u2014 and your budget, and I\u2019ll pull real policies for you. Or ask for Nadia, Milo, Priya or Sasha.");
     }
     input.focus();
   }
