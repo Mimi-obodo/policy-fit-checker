@@ -570,20 +570,10 @@ button.node:focus-visible { outline: 2px solid var(--accent); outline-offset: 3p
 .hero .btn-ghost { color: #F5F3EC; border-color: rgba(239, 237, 230, 0.5); }
 .hero .btn-ghost:hover { background: rgba(239, 237, 230, 0.12); }
 
-/* Quote landing page (index) */
+/* Landing hero (index) */
 .quote-hero { align-items: center; }
-.quote { margin: 0; }
-.quote-text {
-  font-family: var(--font-display); font-weight: 300;
-  font-size: clamp(38px, 5.6vw, 68px); line-height: 1.15;
-  letter-spacing: 0.02em; color: #F5F3EC; margin: 0 auto; max-width: 18ch;
-  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45);
-}
-.quote-attribution {
-  display: block; margin-top: 24px; font-style: normal;
-  font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.14em;
-  text-transform: uppercase; color: rgba(239, 237, 230, 0.72);
-}
+.hero-sub { font-size: 20px; }
+.quote-hero .hero-actions { margin-top: 36px; }
 
 /* Scroll-to-discover */
 .scroll-to-cta {
