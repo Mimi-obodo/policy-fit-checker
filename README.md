@@ -37,13 +37,11 @@ python -m http.server 8080
 
 Then open `http://localhost:8080`.
 
-## Deploy to GitHub Pages
+## Live URL
 
-1. Push this folder to a GitHub repo (e.g. `pfc`).
-2. Repo settings &rarr; Pages &rarr; Source: Deploy from a branch, branch `main`, folder `/`.
-3. Visit `https://<your-username>.github.io/pfc/`.
+**https://mimi-obodo.github.io/policy-fit-checker/**
 
-The site is fully static: the 8+ week visibility requirement is satisfied with zero maintenance.
+The site is fully static: the 8+ week visibility requirement is satisfied with zero maintenance. Push to `main` and the live site updates automatically.
 
 ## The live data source
 
