@@ -15,28 +15,20 @@
   var current = (location.pathname.split("/").pop() || "index.html").toLowerCase();
 
   var PAGES = [
-    { href: "index.html", label: "Home" },
-    { href: "home.html", label: "Explore" },
-    { href: "about.html", label: "About" },
-    { href: "education.html", label: "Education" },
-    { href: "cover.html", label: "Cover List" },
-    { href: "providers.html", label: "Providers" },
-    { href: "how.html", label: "How it works" },
-    { href: "chat.html", label: "Chat" },
-    { href: "mobile.html", label: "Mobile" },
-    { href: "match.html", label: "Find your fit" }
+    { href: "index.html", label: "Home", sub: "Are you insured?" },
+    { href: "home.html", label: "Explore", sub: "Browse policies" },
+    { href: "about.html", label: "About us", sub: "The firm" },
+    { href: "education.html", label: "Education", sub: "News &amp; blog" },
+    { href: "cover.html", label: "Cover list", sub: "Policy overview" },
+    { href: "providers.html", label: "Catalog", sub: "Live catalog" },
+    { href: "how.html", label: "How it works", sub: "The pipeline" },
+    { href: "chat.html", label: "Customer service", sub: "Chat with the team" },
+    { href: "mobile.html", label: "Mobile", sub: "On the go" },
+    { href: "match.html", label: "Find your fit", sub: "Start matching" }
   ];
 
   function isActive(href) {
     return current === href || (href === "index.html" && current === "");
-  }
-
-  function navLinks(cls, skipMatch) {
-    return PAGES.filter(function (p) {
-      return !(skipMatch && p.href === "match.html");
-    }).map(function (p) {
-      return '<a href="' + p.href + '" class="' + cls + '"' + (isActive(p.href) ? ' aria-current="page"' : "") + ">" + p.label + "</a>";
-    }).join("");
   }
 
   var cursor =
@@ -57,35 +49,33 @@
 
   var header =
     '<a class="skip-link" href="#main">Skip to content</a>' +
-    '<header class="site-header">' +
-      '<div class="site-brand">' +
-        '<a class="wordmark" href="index.html" aria-label="Policy Fit Checker home">' +
-          '<span class="wordmark-mark">PFC</span><span>Policy Fit Checker</span>' +
-        "</a>" +
-        '<span class="header-visual" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>' +
+    '<header class="site-header" id="siteHeader">' +
+      '<a class="brand" href="index.html" aria-label="Policy Fit Checker — home">' +
+        '<span class="brand-mark" aria-hidden="true"></span>' +
+        '<span>Policy&nbsp;Fit&nbsp;Checker</span>' +
+      "</a>" +
+      '<div class="header-actions">' +
+        '<a class="header-link' + (isActive("about.html") ? " active" : "") + '" href="about.html">About</a>' +
+        '<a class="header-link" href="home.html">Explore</a>' +
+        '<a class="header-link' + (isActive("providers.html") ? " active" : "") + '" href="providers.html">Catalog</a>' +
+        '<a class="header-link' + (isActive("match.html") ? " active" : "") + '" href="match.html">Find your fit</a>' +
+        '<button class="theme-toggle" id="themeBtn" aria-pressed="false" aria-label="Switch theme">' +
+          '<svg class="icon-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>' +
+          '<svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.2 14.6A8.4 8.4 0 0 1 9.4 3.8a8.4 8.4 0 1 0 10.8 10.8Z"/></svg>' +
+        "</button>" +
+        '<button type="button" class="menu-btn" id="menuCta" aria-expanded="false" aria-controls="siteMenu" aria-label="Open menu">' +
+          '<span class="dots-row"><span class="dot"></span><span class="dot"></span></span>' +
+          '<span class="dots-row"><span class="dot"></span><span class="dot"></span></span>' +
+        "</button>" +
       "</div>" +
-      '<nav class="site-nav" aria-label="Primary">' +
-        navLinks("nav-link", true) +
-        '<a class="nav-cta" href="match.html">Find your fit</a>' +
-      "</nav>" +
-      '<button type="button" class="theme-btn" id="themeBtn" aria-pressed="false" aria-label="Switch theme">' +
-        '<svg class="theme-icon theme-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg>' +
-        '<svg class="theme-icon theme-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>' +
-      "</button>" +
-      '<button type="button" class="theme-btn search-btn" id="searchBtn" aria-expanded="false" aria-controls="searchOverlay" aria-label="Search">' +
-        '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>' +
-      "</button>" +
-      '<button type="button" class="menu-cta" id="menuCta" aria-expanded="false" aria-controls="siteMenu" aria-label="Open menu">' +
-        '<span class="menu-cta-text">Menu</span>' +
-        '<span class="dots-w" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>' +
-      "</button>" +
     "</header>" +
     '<div class="site-menu" id="siteMenu" aria-hidden="true">' +
       '<div class="menu-grid">' +
         '<nav class="menu-links" aria-label="Menu">' +
           PAGES.map(function (p, i) {
             var n = (i + 1) < 10 ? "0" + (i + 1) : String(i + 1);
-            return '<a class="menu-link" href="' + p.href + '"><span>' + n + "</span>" + p.label + "</a>";
+            var cls = isActive(p.href) ? ' class="menu-link active"' : ' class="menu-link"';
+            return '<a' + cls + ' href="' + p.href + '"><span class="num">' + n + '</span><span class="label">' + p.label + '</span><span class="sub">' + p.sub + '</span></a>';
           }).join("") +
         "</nav>" +
         '<div class="menu-terms">' +
