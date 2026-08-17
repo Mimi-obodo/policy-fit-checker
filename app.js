@@ -391,58 +391,211 @@ function appendLog(text, cls) {
   log.scrollTop = log.scrollHeight;
 }
 
-async function pipelineStep(key, activeLabel, work) {
-  setNode(key, "active", "Working");
+var AGENT_MIN_MS = 10000;
+
+async function pipelineStep(key, activeLabel, work, statusLines) {
+  setNode(key, "active", statusLines ? statusLines[0] || "Working" : "Working");
   appendLog(activeLabel, "agent");
+  var started = Date.now();
   var result = await work();
-  await sleep(430);
+  var elapsed = Date.now() - started;
+  var remaining = Math.max(0, AGENT_MIN_MS - elapsed);
+  if (remaining > 0) await sleep(remaining);
   setNode(key, "done", "Done");
   return result;
+}
+
+function setNodeStatus(key, text) {
+  var el = nodes[key];
+  if (!el) return;
+  var st = el.querySelector(".node-status");
+  if (st) st.textContent = text;
+}
+
+/* --------------------------------------------------------------------------
+   Handoff trace: captures every agent's structured output for the trace panel
+   -------------------------------------------------------------------------- */
+var __trace = [];
+function traceCapture(agent, label, data) {
+  __trace.push({ agent: agent, label: label, data: data, ts: new Date() });
+}
+
+/* --------------------------------------------------------------------------
+   Quality-gate: Callum reviews Sasha's copy for real policy_id citations,
+   grounded claims, and no unsupported promises. Returns { pass, reason, target }.
+   -------------------------------------------------------------------------- */
+function callumReview(built, catalog) {
+  var ids = catalog.map(function (p) { return p.policy_id; });
+  var issues = [];
+
+  built.shortlist.forEach(function (c) {
+    if (!c.policy_id || ids.indexOf(c.policy_id) === -1) {
+      issues.push({ target: "sasha", msg: "Copy references policy_id " + (c.policy_id || "none") + " which is not in the catalog" });
+    }
+    if (c.why && /\bguarantee|assured|definitely|will pay out\b/i.test(c.why)) {
+      issues.push({ target: "sasha", msg: "Copy for " + c.policy_id + " makes an unsupported promise: \"" + c.why.substring(0, 80) + "\"" });
+    }
+    if (!c.why || c.why.trim().length < 10) {
+      issues.push({ target: "sasha", msg: "Copy for " + c.policy_id + " is too thin to be useful" });
+    }
+  });
+
+  if (built.shortlist.length > 0) {
+    var topIds = built.shortlist.map(function (c) { return c.policy_id; });
+    var nadiaIds = (built._nadiaEligible || []).map(function (p) { return p.policy_id; });
+    var missingFromNadia = topIds.filter(function (id) { return nadiaIds.indexOf(id) === -1; });
+    if (missingFromNadia.length > 0) {
+      issues.push({ target: "milo", msg: "Shortlist includes " + missingFromNadia.join(", ") + " which were not in Nadia's eligible set" });
+    }
+  }
+
+  if (issues.length === 0) return { pass: true };
+  var primaryTarget = issues[0].target || "sasha";
+  return { pass: false, reason: issues.map(function (i) { return i.msg; }).join("; "), target: primaryTarget };
 }
 
 async function runPipeline(profile) {
   if (window.__pfcRunning) return;
   window.__pfcRunning = true;
   resetPipeline();
+  __trace = [];
   var pipeEl = $("#pipeline");
   if (pipeEl) pipeEl.classList.add("running");
+  var retryCount = 0;
   try {
-    /* Nadia: the genuinely live query happens here, at the moment of use */
+    setNodeStatus("nadia", "retrieving catalog...");
     var catalog = await pipelineStep("nadia",
       "Querying the live policy catalog\u2026", function () { return fetchLiveCatalog(); });
     var nadia = nadiaResearch(catalog, profile);
+    traceCapture("nadia", "Research brief", {
+      total: nadia.total, eligible: nadia.eligible.map(function (p) { return p.policy_id; }),
+      note: nadia.note || "Standard query"
+    });
+    setNodeStatus("nadia", nadia.eligible.length + " policies matched");
     appendLog("Queried " + nadia.total + " live polic" + (nadia.total === 1 ? "y" : "ies") + "; " + nadia.eligible.length + " match your age band and region", "done");
     if (nadia.note) appendLog(nadia.note, "agent");
 
+    setNodeStatus("milo", "scoring " + nadia.eligible.length + " policies...");
     var scored = await pipelineStep("milo",
       "Scoring " + nadia.eligible.length + " eligible policies against your profile\u2026",
       function () { return Promise.resolve(miloDesign(nadia.eligible, profile)); });
+    traceCapture("milo", "Ranking", {
+      ranked: scored.map(function (s) { return { id: s.policy.policy_id, score: s.score.total, reasons: s.score.reasons }; })
+    });
+    setNodeStatus("milo", scored.length + " ranked by fit");
     appendLog("Scored and ranked " + scored.length + " polic" + (scored.length === 1 ? "y" : "ies") + " by fit, not price", "done");
 
+    setNodeStatus("priya", "re-fetching catalog to verify...");
     var built = await pipelineStep("priya",
       "Building your shortlist from live catalog fields\u2026",
       function () {
-        /* Priya re-queries the catalog herself before rendering anything,
-           and cross-checks Milo's shortlist against her fresh fetch. */
         return fetchLiveCatalog().then(function (liveRows) {
           var fetchTime = new Date();
-          return priyaBuild(scored, profile, liveRows, fetchTime);
+          var result = priyaBuild(scored, profile, liveRows, fetchTime);
+          result._nadiaEligible = nadia.eligible;
+          return result;
         });
       });
+    traceCapture("priya", "Verification", {
+      shortlisted: built.shortlist.map(function (c) { return c.policy_id; }),
+      note: built.note
+    });
+    setNodeStatus("priya", built.shortlist.length + " verified");
     appendLog(built.note, "done");
 
+    setNodeStatus("sasha", "writing copy...");
     var copy = await pipelineStep("sasha",
       "Writing the why behind each recommendation\u2026",
       function () {
         built.shortlist.forEach(function (c) { c.why = sashaWhy(c, profile); });
         return Promise.resolve({ empty: built.shortlist.length === 0 ? sashaEmpty(profile) : null });
       });
+    traceCapture("sasha", "Copy", {
+      reasons: built.shortlist.map(function (c) { return { id: c.policy_id, why: c.why }; })
+    });
+    setNodeStatus("sasha", "wrote " + built.shortlist.length + " explanations");
     appendLog(copy.empty ? "The catalog is empty for this profile; wrote the honest message instead" : "Wrote the reason under each of the " + built.shortlist.length + " polic" + (built.shortlist.length === 1 ? "y" : "ies"), "done");
 
+    setNodeStatus("callum", "reviewing handoffs...");
     var verdict = await pipelineStep("callum",
       "Reviewing the handoffs and synthesising the recommendation\u2026",
       function () { return Promise.resolve(callumSynthesise(built.shortlist, profile, nadia)); });
+
+    /* Quality-gate: Callum reviews the full pipeline output */
+    setNodeStatus("callum", "quality-gate check...");
+    var gate = callumReview(built, catalog);
+    traceCapture("callum", "Quality gate", { pass: gate.pass, reason: gate.reason || "All checks passed" });
+
+    if (!gate.pass && retryCount < 1) {
+      retryCount++;
+      appendLog("Callum flagged: " + gate.reason + " \u2014 sending back to " + gate.target, "warn");
+      setNodeStatus("callum", "flagged, sending back to " + gate.target);
+
+      /* Show backward animation on pipeline */
+      var pipeTrack = document.querySelector(".pipeline-track");
+      if (pipeTrack) pipeTrack.classList.add("revision-loop");
+      setNode(gate.target, "revision", "Re-running");
+      await sleep(350);
+
+      if (gate.target === "sasha") {
+        setNodeStatus("sasha", "re-writing copy...");
+        built.shortlist.forEach(function (c) { c.why = sashaWhy(c, profile); });
+        traceCapture("sasha", "Copy (retry)", {
+          reasons: built.shortlist.map(function (c) { return { id: c.policy_id, why: c.why }; })
+        });
+        setNodeStatus("sasha", "re-wrote " + built.shortlist.length + " explanations");
+      } else if (gate.target === "milo") {
+        setNodeStatus("milo", "re-scoring...");
+        scored = miloDesign(nadia.eligible, profile);
+        traceCapture("milo", "Ranking (retry)", {
+          ranked: scored.map(function (s) { return { id: s.policy.policy_id, score: s.score.total, reasons: s.score.reasons }; })
+        });
+        setNodeStatus("milo", "re-scored " + scored.length + " policies");
+        built = await new Promise(function (resolve) {
+          fetchLiveCatalog().then(function (liveRows) {
+            var result = priyaBuild(scored, profile, liveRows, new Date());
+            result._nadiaEligible = nadia.eligible;
+            resolve(result);
+          });
+        });
+        built.shortlist.forEach(function (c) { c.why = sashaWhy(c, profile); });
+        traceCapture("priya", "Re-verification", {
+          shortlisted: built.shortlist.map(function (c) { return c.policy_id; })
+        });
+      } else if (gate.target === "nadia") {
+        setNodeStatus("nadia", "re-querying catalog...");
+        catalog = await fetchLiveCatalog();
+        nadia = nadiaResearch(catalog, profile);
+        traceCapture("nadia", "Research (retry)", {
+          total: nadia.total, eligible: nadia.eligible.map(function (p) { return p.policy_id; })
+        });
+        setNodeStatus("nadia", nadia.eligible.length + " re-matched");
+        scored = miloDesign(nadia.eligible, profile);
+        built = await new Promise(function (resolve) {
+          fetchLiveCatalog().then(function (liveRows) {
+            var result = priyaBuild(scored, profile, liveRows, new Date());
+            result._nadiaEligible = nadia.eligible;
+            resolve(result);
+          });
+        });
+        built.shortlist.forEach(function (c) { c.why = sashaWhy(c, profile); });
+      }
+
+      if (pipeTrack) pipeTrack.classList.remove("revision-loop");
+      setNode(gate.target, "done", "Done");
+
+      gate = callumReview(built, catalog);
+      traceCapture("callum", "Quality gate (re-check)", { pass: gate.pass, reason: gate.reason || "All checks passed" });
+
+      if (!gate.pass) {
+        appendLog("Second check still flagged: " + gate.reason + ". Showing honest status to customer.", "warn");
+        verdict = { note: "The pipeline found issues it could not resolve automatically. Here is an honest summary of what was found.", html: "<p>Callum's quality gate flagged: " + esc(gate.reason) + ". Rather than serve a questionable result, we are showing you exactly what happened.</p>" };
+      }
+    }
+
+    setNodeStatus("callum", "signed off");
     appendLog(verdict.note, "done");
+    traceCapture("callum", "Final verdict", { note: verdict.note });
 
     window.__lastRun = {
       total: nadia.total,
@@ -450,7 +603,9 @@ async function runPipeline(profile) {
       shortlisted: built.shortlist.length,
       at: new Date(),
       profile: profile,
-      top: scored[0]
+      top: scored[0],
+      trace: __trace.slice(),
+      retries: retryCount
     };
 
     renderResults(built, copy, verdict);
@@ -547,7 +702,47 @@ function renderResults(built, copy, verdict) {
       $("#resultCards").appendChild(el);
     });
   }
+  renderTracePanel();
   smoothScrollTo(res);
+}
+
+/* --------------------------------------------------------------------------
+   Handoff trace panel: shows the structured output each agent passed
+   -------------------------------------------------------------------------- */
+function renderTracePanel() {
+  var lr = window.__lastRun;
+  if (!lr || !lr.trace || !lr.trace.length) return;
+  var res = $("#results");
+  if (!res) return;
+  var existing = res.querySelector(".trace-panel");
+  if (existing) existing.remove();
+
+  var panel = document.createElement("div");
+  panel.className = "trace-panel";
+  var names = { nadia: "Nadia (Research)", milo: "Milo (Design)", priya: "Priya (Maker)", sasha: "Sasha (Copy)", callum: "Callum (Manager)" };
+  var html = '<button type="button" class="trace-toggle" aria-expanded="false">View handoff trace</button>';
+  html += '<div class="trace-body" hidden>';
+  html += '<p class="trace-retry">' + (lr.retries ? "Callum's quality gate triggered " + lr.retries + " revision" + (lr.retries > 1 ? "s" : "") + "." : "Quality gate passed on first check.") + '</p>';
+  lr.trace.forEach(function (t) {
+    html += '<div class="trace-step">';
+    html += '<span class="trace-agent">' + (names[t.agent] || t.agent) + '</span>';
+    html += '<span class="trace-label">' + esc(t.label) + '</span>';
+    html += '<span class="trace-ts">' + t.ts.toLocaleTimeString() + '</span>';
+    html += '<pre class="trace-data">' + esc(JSON.stringify(t.data, null, 2)) + '</pre>';
+    html += '</div>';
+  });
+  html += '</div>';
+  panel.innerHTML = html;
+  res.appendChild(panel);
+
+  var toggle = panel.querySelector(".trace-toggle");
+  var body = panel.querySelector(".trace-body");
+  toggle.addEventListener("click", function () {
+    var open = body.hidden;
+    body.hidden = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.textContent = open ? "Hide handoff trace" : "View handoff trace";
+  });
 }
 
 /* --------------------------------------------------------------------------
@@ -927,31 +1122,31 @@ function initPreviews() {
 var PERSONAS = {
   nadia: {
     num: 1, name: "Nadia", role: "Researcher",
-    short: "Queries the live catalog at the moment of the request and returns only policies that genuinely fit: correct age band, life-stage tag, and budget range. Cites every claim with its exact policy_id. If nothing fits well, says so plainly and explains the gap rather than forcing a weak match.",
+    short: "Fetches the live catalog at the moment of the request, returns only policies that genuinely fit, and identifies patterns across the eligible set: what they have in common, the actual trade-offs between them, and any genuine gap worth naming. Cites every claim with its exact policy_id.",
     voice: "Precise, evidence-first, quietly blunt. Concrete and sourced: lead with the fact, then the implication, and keep opinion visibly separate from data.",
     boundary: "Never invents a premium, exclusion, or coverage figure. A gap in the catalog is a finding, not a failure."
   },
   milo: {
     num: 2, name: "Milo", role: "Designer",
-    short: "Decides which two to four policies to present, in what order, and what one-line reason best explains the fit for this specific customer. Prioritises clarity over completeness: cuts anything that does not change the customer's decision.",
+    short: "Decides which two to four policies to present, in what order, and explains why the shortlist is ordered this way, referencing the specific thing about the customer's situation that drove the ranking. Prioritises clarity over completeness.",
     voice: "Methodical and audit-minded. Visual and structural: talk in flows, screens, and named trade-offs rather than adjectives.",
     boundary: "Scores and ranks, does not market. A low score is reported as a low score. Never fabricates policy details."
   },
   priya: {
     num: 3, name: "Priya", role: "Maker",
-    short: "Re-fetches the live catalog independently and confirms each policy_id still resolves to real, current data before rendering the final result the customer sees. Never trusts a value passed to it without re-verifying it against the live source.",
+    short: "Re-fetches the live catalog independently and confirms each policy_id still resolves to real, current data before rendering the final result. Never trusts a value passed to it without re-verifying it against the live source. Explains what was actually verified, not just that verification happened.",
     voice: "Careful, builder's honesty. Precise and a little dry: name fields, values, and policy IDs, not vague things.",
     boundary: "Never presents cached or hardcoded data as live. If a policy_id does not resolve, says so."
   },
   sasha: {
     num: 4, name: "Sasha", role: "Communicator",
-    short: "Writes the surrounding customer-facing copy: the framing above the results, and, if the match is weak or empty, an honest message explaining why. Grounds every claim in the actual data rendered, not in generic marketing language.",
+    short: "Writes the surrounding customer-facing copy: the framing above the results, and, if the match is weak or empty, an honest message explaining why. When asked comparative questions, reasons about trade-offs rather than restating both policies' specs and leaving the comparison to the user.",
     voice: "Warm, exact, no jargon. Plain, specific, customer-shaped: write the fine print the way you would explain it to a friend.",
     boundary: "Never promises an outcome the match cannot support. No fake urgency, no manufactured scarcity, no shaming anyone for being under-insured."
   },
   callum: {
     num: 5, name: "Callum", role: "Manager",
-    short: "Reviews the outputs from all four agents in sequence, confirms each handoff is coherent with the one before it, and flags any mismatch before it reaches the customer. Produces a short executive summary of the run.",
+    short: "Reviews the outputs from all four agents in sequence, confirms each handoff is coherent, and flags any mismatch. Produces an executive summary that synthesises what the run actually revealed about the customer's situation, not just that four agents ran in sequence.",
     voice: "Calm, decisive, responsible for the whole line. Speak in handoffs, gates, and decisions rather than vague encouragement.",
     boundary: "Never forces a match. If the catalog has nothing good, says so clearly. Does not do the specialists' work in their place."
   }
@@ -1092,28 +1287,22 @@ async function botMatchAnswer(profile) {
   ["nadia", "milo", "priya", "sasha", "callum"].forEach(function (k) { setNode(k, null, "Idle"); });
   if (live) live.classList.add("working");
   say("Nadia is querying the live published catalog\u2026");
-  setNode("nadia", "active", "Querying");
 
-  var catalog = await fetchLiveCatalog();
-  setNode("nadia", "done", "Done");
+  var catalog = await pipelineStep("nadia", "Querying live catalog\u2026",
+    function () { return fetchLiveCatalog(); }, ["Querying"]);
   var nadia = nadiaResearch(catalog, profile);
 
-  setNode("milo", "active", "Scoring");
-  await sleep(320);
-  setNode("milo", "done", "Done");
-  var scored = miloDesign(nadia.eligible, profile);
+  var scored = await pipelineStep("milo", "Scoring " + nadia.eligible.length + " eligible policies\u2026",
+    function () { return Promise.resolve(miloDesign(nadia.eligible, profile)); }, ["Scoring"]);
 
-  setNode("priya", "active", "Building");
-  await sleep(320);
-  setNode("priya", "done", "Done");
+  await pipelineStep("priya", "Building shortlist\u2026",
+    function () { return Promise.resolve(); }, ["Building"]);
 
-  setNode("sasha", "active", "Writing");
-  await sleep(320);
-  setNode("sasha", "done", "Done");
+  await pipelineStep("sasha", "Writing copy\u2026",
+    function () { return Promise.resolve(); }, ["Writing"]);
 
-  setNode("callum", "active", "Reviewing");
-  await sleep(320);
-  setNode("callum", "done", "Done");
+  await pipelineStep("callum", "Reviewing\u2026",
+    function () { return Promise.resolve(); }, ["Reviewing"]);
 
   say("Live catalog queried at " + new Date().toLocaleTimeString() + " \u2014 " + nadia.total + " policies, " + nadia.eligible.length + " eligible for your profile.");
   if (live) live.classList.remove("working");
@@ -1768,6 +1957,30 @@ function initLoader() {
 }
 
 /* --------------------------------------------------------------------------
+   Scroll-reveal: IntersectionObserver adds .in to .reveal and .fly-wrap
+   (premium.js handles index.html; this covers all other pages)
+   -------------------------------------------------------------------------- */
+function initScrollReveal() {
+  if (!("IntersectionObserver" in window)) {
+    document.querySelectorAll(".reveal, .fly-wrap").forEach(function (el) { el.classList.add("in"); });
+    return;
+  }
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduced) {
+    document.querySelectorAll(".reveal, .fly-wrap").forEach(function (el) { el.classList.add("in"); });
+    return;
+  }
+  var targets = document.querySelectorAll(".reveal:not(.in), .fly-wrap:not(.in)");
+  if (!targets.length) return;
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); }
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+  targets.forEach(function (el) { io.observe(el); });
+}
+
+/* --------------------------------------------------------------------------
    Boot (guarded: each module only starts where its page markup exists)
    -------------------------------------------------------------------------- */
 if (document.querySelector(".flip-icon")) initFlipIcons();
@@ -1789,3 +2002,4 @@ initLoader();
 initTheme();
 initChatbot();
 initSearch();
+initScrollReveal();

@@ -47,9 +47,16 @@
       "</button>" +
     "</div>";
 
+  var isHome = current === "index.html" || current === "";
+  var backBtn = isHome ? "" :
+    '<button type="button" class="back-btn" id="backBtn" aria-label="Go back" onclick="history.back()">' +
+      '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5m0 0 6 6m-6-6 6-6"/></svg>' +
+    "</button>";
+
   var header =
     '<a class="skip-link" href="#main">Skip to content</a>' +
     '<header class="site-header" id="siteHeader">' +
+      backBtn +
       '<a class="brand" href="index.html" aria-label="Policy Fit Checker — home">' +
         '<span class="brand-mark" aria-hidden="true"></span>' +
         '<span>Policy&nbsp;Fit&nbsp;Checker</span>' +

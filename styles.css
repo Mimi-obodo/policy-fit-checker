@@ -120,6 +120,15 @@ a:hover { text-decoration: underline; }
   text-transform: uppercase; color: var(--parchment); text-decoration: none;
 }
 .brand:hover { text-decoration: none; }
+.back-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border: none; border-radius: 50%;
+  background: var(--surface-2); color: var(--parchment); cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+.back-btn:hover { background: var(--accent); color: var(--ink); transform: translateX(-2px); }
+.back-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .brand-mark {
   width: 14px; height: 14px;
   background: var(--accent); position: relative;
@@ -1432,4 +1441,176 @@ body { animation: pageIn 0.6s var(--ease); }
 @media (max-width: 520px) {
   .chatbot-fab { left: 14px; bottom: 14px; }
   .chatbot-panel { left: 14px; bottom: 82px; width: calc(100vw - 28px); }
+}
+
+/* --------------------------------------------------------------------------
+   Terminal-style active pipeline node: phosphor glow, scanlines, flicker
+   -------------------------------------------------------------------------- */
+.node.active .node-idx {
+  position: relative;
+  border-color: #FFB000;
+  background: #1A1A1A;
+  color: #FFB000;
+  box-shadow:
+    0 0 0 4px rgba(255, 176, 0, 0.18),
+    0 0 22px rgba(255, 176, 0, 0.25),
+    0 0 50px rgba(255, 176, 0, 0.08);
+  animation: node-flicker 2.8s ease-in-out infinite;
+}
+.node.active .node-idx::after {
+  content: "";
+  position: absolute; inset: 0; border-radius: inherit;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 176, 0, 0.06) 2px,
+    rgba(255, 176, 0, 0.06) 4px
+  );
+  pointer-events: none;
+  animation: scanline-scroll 1.6s linear infinite;
+}
+.node.active .node-status {
+  color: #FFB000;
+  font-weight: 500;
+}
+.node.active .node-status::before { content: "▸ "; }
+
+@keyframes node-flicker {
+  0%, 100% { opacity: 1; }
+  48% { opacity: 1; }
+  50% { opacity: 0.82; }
+  52% { opacity: 1; }
+  74% { opacity: 1; }
+  75% { opacity: 0.9; }
+  76% { opacity: 1; }
+}
+@keyframes scanline-scroll {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 16px; }
+}
+
+.node.revision .node-idx {
+  border-color: var(--warn);
+  background: var(--surface-2);
+  color: var(--warn);
+  box-shadow: 0 0 0 4px rgba(232, 185, 67, 0.15);
+  animation: revision-pulse 0.6s ease-in-out 2;
+}
+.node.revision .node-status { color: var(--warn); }
+.node.revision .node-status::before { content: "↻ "; }
+
+@keyframes revision-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* Revision-loop backward animation on the track */
+.pipeline-track.revision-loop::after {
+  background: linear-gradient(90deg, transparent, var(--warn) 22%, var(--warn) 78%, transparent);
+  transform-origin: right;
+  animation: track-reverse 0.7s ease-in-out;
+}
+@keyframes track-reverse {
+  0% { transform: scaleX(1); }
+  100% { transform: scaleX(0); }
+}
+
+/* Reduced motion: kill scanlines and flicker */
+@media (prefers-reduced-motion: reduce) {
+  .node.active .node-idx { animation: none; }
+  .node.active .node-idx::after { animation: none; }
+  .node.revision .node-idx { animation: none; }
+  .pipeline-track.revision-loop::after { animation: none; }
+}
+
+/* --------------------------------------------------------------------------
+   Handoff trace panel
+   -------------------------------------------------------------------------- */
+.trace-panel {
+  max-width: 640px; margin: 24px auto 0;
+  border: var(--border); border-radius: var(--radius);
+  background: var(--surface);
+}
+.trace-toggle {
+  display: block; width: 100%;
+  padding: 14px 20px;
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--slate); text-align: left;
+}
+.trace-toggle:hover { color: var(--parchment); }
+.trace-body { padding: 0 20px 20px; }
+.trace-retry {
+  margin: 0 0 14px; padding: 8px 12px;
+  background: var(--surface-2); border-radius: var(--radius);
+  font-family: var(--font-mono); font-size: 11px; color: var(--slate);
+}
+.trace-step {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 6px 12px; align-items: baseline;
+  padding: 10px 0; border-top: var(--border);
+}
+.trace-agent {
+  font-family: var(--font-display); font-weight: 600; font-size: 13px;
+  color: var(--parchment); white-space: nowrap;
+}
+.trace-label {
+  font-family: var(--font-mono); font-size: 11px; color: var(--accent);
+}
+.trace-ts {
+  font-family: var(--font-mono); font-size: 10px; color: var(--slate);
+  text-align: right;
+}
+.trace-data {
+  grid-column: 1 / -1; margin: 6px 0 0;
+  padding: 10px 14px;
+  background: var(--surface-2); border-radius: var(--radius);
+  font-family: var(--font-mono); font-size: 11px; line-height: 1.6;
+  color: var(--slate); white-space: pre-wrap; word-break: break-word;
+  max-height: 180px; overflow-y: auto;
+}
+
+/* --------------------------------------------------------------------------
+   Scroll-reveal animation system (IntersectionObserver-driven)
+   -------------------------------------------------------------------------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* Staggered children: .reveal-stagger > .reveal:nth-child(n) */
+.reveal-stagger > .reveal:nth-child(2) { transition-delay: 0.08s; }
+.reveal-stagger > .reveal:nth-child(3) { transition-delay: 0.16s; }
+.reveal-stagger > .reveal:nth-child(4) { transition-delay: 0.24s; }
+.reveal-stagger > .reveal:nth-child(5) { transition-delay: 0.32s; }
+.reveal-stagger > .reveal:nth-child(6) { transition-delay: 0.40s; }
+
+/* Fly-up text: overflow-hidden wrapper animates child translateY */
+.fly-wrap {
+  overflow: hidden; display: block;
+}
+.fly-wrap > .fly-text {
+  display: block;
+  transform: translateY(100%);
+  transition: transform 0.6s var(--ease);
+}
+.fly-wrap.in > .fly-text {
+  transform: translateY(0);
+}
+
+/* Section background transition between hero and body */
+.section-bg-transition {
+  transition: background-color 0.5s var(--ease);
+}
+.section-bg-transition.dark { background-color: var(--parchment); }
+.section-bg-transition.light { background-color: var(--surface); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .fly-wrap > .fly-text { transform: none; transition: none; }
 }
