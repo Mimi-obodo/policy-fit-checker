@@ -509,7 +509,7 @@ function buildMiloOutput(scored, profile) {
   var lines = ["<b>Shortlist ranking</b>"];
   scored.slice(0, 4).forEach(function (s, i) {
     lines.push("<p><b>" + (i + 1) + ".</b> <b>" + esc(s.policy.policy_name) + "</b> (" + esc(s.policy.policy_id) +
-      ") — score " + Math.round(s.score.total) + "/100. " +
+      ") - score " + Math.round(s.score.total) + "/100. " +
       "Reasons: " + s.score.reasons.slice(0, 3).map(esc).join("; ") + ".</p>");
   });
   lines.push("<p>Prioritised by fit to your profile, not price.</p>");

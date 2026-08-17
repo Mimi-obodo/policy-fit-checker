@@ -57,7 +57,7 @@
     '<a class="skip-link" href="#main">Skip to content</a>' +
     '<header class="site-header" id="siteHeader">' +
       backBtn +
-      '<a class="brand" href="index.html" aria-label="Policy Fit Checker — home">' +
+      '<a class="brand" href="index.html" aria-label="Policy Fit Checker - home">' +
         '<span class="brand-mark" aria-hidden="true"></span>' +
         '<span>Policy&nbsp;Fit&nbsp;Checker</span>' +
       "</a>" +

@@ -478,7 +478,7 @@ function render(cards) {
       <div class="provider">${escapeHTML(p.provider_name)} · ${escapeHTML(p.region)}</div>
       <div class="meta">
         <span class="tag type">${escapeHTML(p.insurance_type)}</span>
-        <span class="tag">ages ${p.min_age}–${p.max_age}</span>
+        <span class="tag">ages ${p.min_age}-${p.max_age}</span>
         <span class="tag">${escapeHTML(p.target_life_stage)}</span>
       </div>
       <div class="premium">€${p.monthly_premium_eur.toFixed(2)}<small> /month</small></div>
@@ -519,7 +519,7 @@ function gdpSparkline(values) {
     bars + '</svg>';
 }
 
-function fmtNum(n) { return (n == null) ? "—" : Math.round(n).toLocaleString(); }
+function fmtNum(n) { return (n == null) ? "-" : Math.round(n).toLocaleString(); }
 
 async function loadLocation(key) {
   const c = COUNTRIES[key];
@@ -542,11 +542,11 @@ async function loadLocation(key) {
     ctxGrid.insertAdjacentHTML("beforeend", ctxCard(
       'Weather · ' + escapeHTML(c.capital),
       Math.round(temp) + '°C',
-      (WMO[code] || "—") + ' · wind ' + Math.round(wind) + ' km/h' + (feel != null ? ' · feels like ' + Math.round(feel) + '°C' : ''),
+      (WMO[code] || "-") + ' · wind ' + Math.round(wind) + ' km/h' + (feel != null ? ' · feels like ' + Math.round(feel) + '°C' : ''),
       ''
     ));
   } else {
-    ctxGrid.insertAdjacentHTML("beforeend", ctxCard("Weather", "—", '<div class="ctx-error">Unavailable</div>', ""));
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard("Weather", "-", '<div class="ctx-error">Unavailable</div>', ""));
   }
 
   if (country && !country.error) {
@@ -559,7 +559,7 @@ async function loadLocation(key) {
       ''
     ));
   } else {
-    ctxGrid.insertAdjacentHTML("beforeend", ctxCard("Country", "—", '<div class="ctx-error">Unavailable</div>', ""));
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard("Country", "-", '<div class="ctx-error">Unavailable</div>', ""));
   }
 
   if (gdp && !gdp.error) {
@@ -568,12 +568,12 @@ async function loadLocation(key) {
     const vals = data.map(d => d.value).filter(v => v != null).reverse();
     ctxGrid.insertAdjacentHTML("beforeend", ctxCard(
       'GDP per capita',
-      latest ? '$' + fmtNum(latest.value) : "—",
+      latest ? '$' + fmtNum(latest.value) : "-",
       latest ? 'current US$ · ' + latest.date + ' · last ' + data.length + ' years' : 'current US$',
       gdpSparkline(vals)
     ));
   } else {
-    ctxGrid.insertAdjacentHTML("beforeend", ctxCard("GDP per capita", "—", '<div class="ctx-error">Unavailable</div>', ""));
+    ctxGrid.insertAdjacentHTML("beforeend", ctxCard("GDP per capita", "-", '<div class="ctx-error">Unavailable</div>', ""));
   }
 }
 
