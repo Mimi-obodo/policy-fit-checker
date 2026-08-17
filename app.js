@@ -391,15 +391,14 @@ function appendLog(text, cls) {
   log.scrollTop = log.scrollHeight;
 }
 
-var AGENT_MIN_MS = 10000;
-
-async function pipelineStep(key, activeLabel, work, statusLines) {
+async function pipelineStep(key, activeLabel, work, statusLines, minMs) {
+  var floor = typeof minMs === "number" ? minMs : 6000;
   setNode(key, "active", statusLines ? statusLines[0] || "Working" : "Working");
   appendLog(activeLabel, "agent");
   var started = Date.now();
   var result = await work();
   var elapsed = Date.now() - started;
-  var remaining = Math.max(0, AGENT_MIN_MS - elapsed);
+  var remaining = Math.max(0, floor - elapsed);
   if (remaining > 0) await sleep(remaining);
   setNode(key, "done", "Done");
   return result;
@@ -465,7 +464,7 @@ async function runPipeline(profile) {
   try {
     setNodeStatus("nadia", "retrieving catalog...");
     var catalog = await pipelineStep("nadia",
-      "Querying the live policy catalog\u2026", function () { return fetchLiveCatalog(); });
+      "Querying the live policy catalog\u2026", function () { return fetchLiveCatalog(); }, undefined, 10000);
     var nadia = nadiaResearch(catalog, profile);
     traceCapture("nadia", "Research brief", {
       total: nadia.total, eligible: nadia.eligible.map(function (p) { return p.policy_id; }),
@@ -478,7 +477,7 @@ async function runPipeline(profile) {
     setNodeStatus("milo", "scoring " + nadia.eligible.length + " policies...");
     var scored = await pipelineStep("milo",
       "Scoring " + nadia.eligible.length + " eligible policies against your profile\u2026",
-      function () { return Promise.resolve(miloDesign(nadia.eligible, profile)); });
+      function () { return Promise.resolve(miloDesign(nadia.eligible, profile)); }, undefined, 8000);
     traceCapture("milo", "Ranking", {
       ranked: scored.map(function (s) { return { id: s.policy.policy_id, score: s.score.total, reasons: s.score.reasons }; })
     });
@@ -495,7 +494,7 @@ async function runPipeline(profile) {
           result._nadiaEligible = nadia.eligible;
           return result;
         });
-      });
+      }, undefined, 6000);
     traceCapture("priya", "Verification", {
       shortlisted: built.shortlist.map(function (c) { return c.policy_id; }),
       note: built.note
@@ -509,7 +508,7 @@ async function runPipeline(profile) {
       function () {
         built.shortlist.forEach(function (c) { c.why = sashaWhy(c, profile); });
         return Promise.resolve({ empty: built.shortlist.length === 0 ? sashaEmpty(profile) : null });
-      });
+      }, undefined, 6000);
     traceCapture("sasha", "Copy", {
       reasons: built.shortlist.map(function (c) { return { id: c.policy_id, why: c.why }; })
     });
@@ -519,7 +518,7 @@ async function runPipeline(profile) {
     setNodeStatus("callum", "reviewing handoffs...");
     var verdict = await pipelineStep("callum",
       "Reviewing the handoffs and synthesising the recommendation\u2026",
-      function () { return Promise.resolve(callumSynthesise(built.shortlist, profile, nadia)); });
+      function () { return Promise.resolve(callumSynthesise(built.shortlist, profile, nadia)); }, undefined, 6000);
 
     /* Quality-gate: Callum reviews the full pipeline output */
     setNodeStatus("callum", "quality-gate check...");
@@ -1289,20 +1288,20 @@ async function botMatchAnswer(profile) {
   say("Nadia is querying the live published catalog\u2026");
 
   var catalog = await pipelineStep("nadia", "Querying live catalog\u2026",
-    function () { return fetchLiveCatalog(); }, ["Querying"]);
+    function () { return fetchLiveCatalog(); }, ["Querying"], 10000);
   var nadia = nadiaResearch(catalog, profile);
 
   var scored = await pipelineStep("milo", "Scoring " + nadia.eligible.length + " eligible policies\u2026",
-    function () { return Promise.resolve(miloDesign(nadia.eligible, profile)); }, ["Scoring"]);
+    function () { return Promise.resolve(miloDesign(nadia.eligible, profile)); }, ["Scoring"], 8000);
 
   await pipelineStep("priya", "Building shortlist\u2026",
-    function () { return Promise.resolve(); }, ["Building"]);
+    function () { return Promise.resolve(); }, ["Building"], 6000);
 
   await pipelineStep("sasha", "Writing copy\u2026",
-    function () { return Promise.resolve(); }, ["Writing"]);
+    function () { return Promise.resolve(); }, ["Writing"], 6000);
 
   await pipelineStep("callum", "Reviewing\u2026",
-    function () { return Promise.resolve(); }, ["Reviewing"]);
+    function () { return Promise.resolve(); }, ["Reviewing"], 6000);
 
   say("Live catalog queried at " + new Date().toLocaleTimeString() + " \u2014 " + nadia.total + " policies, " + nadia.eligible.length + " eligible for your profile.");
   if (live) live.classList.remove("working");
