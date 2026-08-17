@@ -1614,3 +1614,205 @@ body { animation: pageIn 0.6s var(--ease); }
   .reveal { opacity: 1; transform: none; transition: none; }
   .fly-wrap > .fly-text { transform: none; transition: none; }
 }
+
+/* ==========================================================================
+   Agent output trail
+   ========================================================================== */
+.agent-trail {
+  max-width: 680px; margin: 0 auto;
+  padding: 0 0 8px;
+  position: relative;
+}
+
+/* Vertical connecting line down the left margin */
+.agent-trail::before {
+  content: ""; position: absolute;
+  left: 23px; top: 0; bottom: 0; width: 2px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dim, rgba(11,60,133,0.18)) 100%);
+  border-radius: 1px;
+}
+
+/* --- Individual trail card --- */
+.trail-card {
+  position: relative;
+  margin: 0 0 4px;
+  padding-left: 56px;
+  opacity: 0;
+  transform: translateY(16px);
+  animation: trail-enter 0.45s var(--ease) forwards;
+}
+@keyframes trail-enter {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Dot on the connecting line */
+.trail-card::before {
+  content: ""; position: absolute;
+  left: 16px; top: 28px;
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--surface);
+  z-index: 1;
+  transition: background 0.3s, border-color 0.3s;
+}
+.trail-card.trail-active::before {
+  border-color: #FFB000;
+  background: #1A1A1A;
+  box-shadow: 0 0 12px rgba(255,176,0,0.35);
+}
+.trail-card.trail-done::before {
+  border-color: var(--ok);
+  background: var(--ok);
+}
+
+.trail-card-inner {
+  background: var(--surface);
+  border: var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.trail-card.trail-active .trail-card-inner {
+  border-color: #FFB000;
+  box-shadow: 0 0 0 2px rgba(255,176,0,0.12), 0 0 30px rgba(255,176,0,0.06);
+  animation: card-glow 3s ease-in-out infinite;
+}
+@keyframes card-glow {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(255,176,0,0.12), 0 0 30px rgba(255,176,0,0.06); }
+  50% { box-shadow: 0 0 0 2px rgba(255,176,0,0.22), 0 0 40px rgba(255,176,0,0.10); }
+}
+
+/* --- Card header --- */
+.trail-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px 10px;
+}
+.trail-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  flex-shrink: 0;
+}
+.trail-name {
+  font-family: var(--font-display);
+  font-size: 14px; color: var(--parchment);
+  line-height: 1.3;
+}
+.trail-name b { font-weight: 600; }
+.trail-name span { color: var(--slate); font-size: 12px; }
+
+/* --- Provenance tags --- */
+.trail-tags {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 0 18px 10px;
+}
+.trail-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-color, rgba(11,60,133,0.12));
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.06em;
+  color: var(--slate);
+  white-space: nowrap;
+}
+.trail-tag-ok {
+  border-color: rgba(11,60,133,0.25);
+  color: var(--accent);
+}
+
+/* --- Output area --- */
+.trail-output {
+  padding: 0 18px 14px;
+  font-size: 13px; line-height: 1.65; color: var(--parchment);
+}
+.trail-output b { font-weight: 600; color: var(--parchment); }
+.trail-output p { margin: 6px 0; }
+
+/* Terminal (active state) */
+.trail-terminal {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 12px;
+  background: #0D0D0C;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px; color: #FFB000;
+  letter-spacing: 0.04em;
+  position: relative;
+  overflow: hidden;
+}
+.trail-terminal::after {
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(255,176,0,0.04) 2px, rgba(255,176,0,0.04) 4px
+  );
+  pointer-events: none;
+}
+.trail-terminal-text { position: relative; z-index: 1; }
+
+.trail-cursor {
+  display: inline-block; width: 7px; height: 14px;
+  background: #FFB000; border-radius: 1px;
+  animation: cursor-blink 1s step-end infinite;
+  flex-shrink: 0;
+  position: relative; z-index: 1;
+}
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; } 50% { opacity: 0; }
+}
+
+/* Settled state: terminal area hides, output shows */
+.trail-done .trail-terminal { display: none; }
+
+/* --- Handoff bar --- */
+.trail-handoff {
+  padding: 10px 18px;
+  border-top: 1px solid var(--border-color, rgba(11,60,133,0.12));
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 0.08em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.trail-handoff::before { content: "→ "; }
+.trail-handoff-final { color: var(--ok); }
+
+/* --- Revision note card --- */
+.trail-revision-note {
+  position: relative;
+  margin: 4px 0 4px 56px;
+  padding: 10px 16px;
+  background: rgba(232,185,67,0.08);
+  border-left: 3px solid var(--warn);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-family: var(--font-mono);
+  font-size: 11px; line-height: 1.5;
+  color: var(--warn);
+  opacity: 0;
+  animation: trail-enter 0.35s var(--ease) forwards;
+}
+.trail-revision-icon {
+  font-weight: 700; margin-right: 6px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .trail-card { opacity: 1; transform: none; animation: none; }
+  .trail-card.trail-active .trail-card-inner { animation: none; }
+  .trail-card.trail-active::before { animation: none; }
+  .trail-cursor { animation: none; }
+  .trail-revision-note { opacity: 1; animation: none; }
+}
+
+/* Mobile */
+@media (max-width: 520px) {
+  .agent-trail { padding-left: 0; }
+  .trail-card { padding-left: 44px; }
+  .agent-trail::before { left: 17px; }
+  .trail-card::before { left: 10px; }
+  .trail-revision-note { margin-left: 44px; }
+}

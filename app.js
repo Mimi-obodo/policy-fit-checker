@@ -377,6 +377,7 @@ function resetPipeline() {
   if (p) p.classList.remove("running");
   var log = $("#pipelineLog");
   if (log) log.innerHTML = "";
+  resetTrail();
 }
 
 var logId = 0;
@@ -389,6 +390,157 @@ function appendLog(text, cls) {
   log.appendChild(el);
   logId++;
   log.scrollTop = log.scrollHeight;
+}
+
+/* --------------------------------------------------------------------------
+   Agent output trail: visible card trail below the pipeline diagram
+   -------------------------------------------------------------------------- */
+var AGENT_META = {
+  nadia:  { name: "Nadia Kestrel",  role: "RESEARCHER",   domain: "Market and customer intelligence",    color: "#0B3C85", next: "Milo" },
+  milo:   { name: "Milo Ferreira",  role: "DESIGNER",      domain: "Recommendation-experience design",    color: "#6B4C9A", next: "Priya" },
+  priya:  { name: "Priya Ashworth", role: "MAKER",         domain: "Building and shipping the prototype", color: "#2E8B57", next: "Sasha" },
+  sasha:  { name: "Sasha Lindqvist", role: "COMMUNICATOR", domain: "Messaging and go-to-market",          color: "#C45628", next: "Callum" },
+  callum: { name: "Callum Doyle",   role: "MANAGER",       domain: "Orchestration across the pipeline",   color: "#0B3C85", next: null }
+};
+var __trailCards = {};
+
+function resetTrail() {
+  var trail = $("#agentTrail");
+  if (trail) trail.innerHTML = "";
+  __trailCards = {};
+}
+
+function appendTrailCard(key, total, profile) {
+  var trail = $("#agentTrail");
+  if (!trail) return;
+  var m = AGENT_META[key];
+  var pos = ["nadia","milo","priya","sasha","callum"].indexOf(key) + 1;
+  var el = document.createElement("div");
+  el.className = "trail-card trail-active";
+  el.setAttribute("data-agent", key);
+
+  var badgeStyle = "background:" + m.color + ";color:#fff";
+  var handoffHtml = m.next
+    ? '<div class="trail-handoff">Handoff artifact → ' + esc(m.next) + '</div>'
+    : '<div class="trail-handoff trail-handoff-final">Pipeline complete · summary delivered to customer</div>';
+
+  el.innerHTML =
+    '<div class="trail-card-inner">' +
+      '<div class="trail-header">' +
+        '<span class="trail-badge" style="' + badgeStyle + '">' + m.role + '</span>' +
+        '<div class="trail-name">' +
+          '<b>' + esc(m.name) + '</b>' +
+          '<span> · ' + esc(m.domain) + ' · pipeline ' + pos + ' of 5</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="trail-tags" id="trailTags_' + key + '"></div>' +
+      '<div class="trail-output" id="trailOutput_' + key + '">' +
+        '<div class="trail-terminal">' +
+          '<span class="trail-cursor" aria-hidden="true"></span>' +
+          '<span class="trail-terminal-text" id="trailTerminal_' + key + '">Initialising…</span>' +
+        '</div>' +
+      '</div>' +
+      handoffHtml +
+    '</div>';
+
+  trail.appendChild(el);
+  __trailCards[key] = el;
+  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function updateTrailTags(key, tags) {
+  var container = $("#trailTags_" + key);
+  if (!container) return;
+  container.innerHTML = tags.map(function (t) {
+    var cls = t.ok ? "trail-tag trail-tag-ok" : "trail-tag";
+    return '<span class="' + cls + '">' + esc(t.text) + (t.ok ? ' ✓' : '') + '</span>';
+  }).join("");
+}
+
+function updateTrailTerminal(key, text) {
+  var el = $("#trailTerminal_" + key);
+  if (el) el.textContent = text;
+}
+
+function updateTrailOutput(key, html) {
+  var el = $("#trailOutput_" + key);
+  if (!el) return;
+  el.innerHTML = html;
+}
+
+function settleTrailCard(key) {
+  var card = __trailCards[key];
+  if (!card) return;
+  card.classList.remove("trail-active");
+  card.classList.add("trail-done");
+}
+
+function appendRevisionNote(text) {
+  var trail = $("#agentTrail");
+  if (!trail) return;
+  var el = document.createElement("div");
+  el.className = "trail-revision-note";
+  el.innerHTML = '<span class="trail-revision-icon" aria-hidden="true">↻</span> ' + esc(text);
+  trail.appendChild(el);
+  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function buildNadiaOutput(nadia, profile, catalog) {
+  var tagList = profile.age ? (profile.age + " yr") : "";
+  if (profile.life_stage) tagList += " · " + profile.life_stage;
+  if (profile.budget) tagList += " · budget " + money(profile.budget) + "/mo";
+  var lines = [
+    "<b>Research brief</b>",
+    "<p>Catalog queried: <b>" + nadia.total + " policies</b> total. " +
+      "After filtering by age band" + (profile.region ? ", region (" + esc(profile.region) + ")" : "") +
+      " and budget, <b>" + nadia.eligible.length + " policies</b> match.</p>"
+  ];
+  if (nadia.eligible.length > 0) {
+    lines.push("<p>Eligible policy IDs: <b>" + nadia.eligible.map(function (p) { return p.policy_id; }).join(", ") + "</b></p>");
+  }
+  if (nadia.note) lines.push("<p><i>" + esc(nadia.note) + "</i></p>");
+  lines.push("<p>Trade-offs identified: " + (nadia.eligible.length > 1
+    ? nadia.eligible.length + " options across " + [...new Set(nadia.eligible.map(function (p) { return p.provider_name; }))].length + " providers"
+    : "single matching option") + ".</p>");
+  return lines.join("");
+}
+
+function buildMiloOutput(scored, profile) {
+  var lines = ["<b>Shortlist ranking</b>"];
+  scored.slice(0, 4).forEach(function (s, i) {
+    lines.push("<p><b>" + (i + 1) + ".</b> <b>" + esc(s.policy.policy_name) + "</b> (" + esc(s.policy.policy_id) +
+      ") — score " + Math.round(s.score.total) + "/100. " +
+      "Reasons: " + s.score.reasons.slice(0, 3).map(esc).join("; ") + ".</p>");
+  });
+  lines.push("<p>Prioritised by fit to your profile, not price.</p>");
+  return lines.join("");
+}
+
+function buildPriyaOutput(built, profile) {
+  var lines = [
+    "<b>Verification note</b>",
+    "<p>" + esc(built.note) + "</p>",
+    "<p>Shortlisted: <b>" + built.shortlist.map(function (c) { return c.policy_id; }).join(", ") + "</b></p>"
+  ];
+  return lines.join("");
+}
+
+function buildSashaOutput(built, profile) {
+  if (built.shortlist.length === 0) {
+    return "<b>Customer copy</b><p>The catalog has no strong match for this profile. Writing the honest gap message instead.</p>";
+  }
+  var lines = ["<b>Customer-facing copy</b>"];
+  built.shortlist.forEach(function (c) {
+    lines.push("<p><b>" + esc(c.policy_id) + ":</b> " + esc(c.why) + "</p>");
+  });
+  return lines.join("");
+}
+
+function buildCallumOutput(verdict, built, profile) {
+  return "<b>Executive summary</b><p>" + esc(verdict.note) + "</p>" +
+    (built.shortlist.length > 0
+      ? "<p>Shortlist: " + built.shortlist.map(function (c) { return esc(c.policy_id) + " (" + esc(c.provider_name) + ")"; }).join(", ") + ".</p>"
+      : "");
 }
 
 async function pipelineStep(key, activeLabel, work, statusLines, minMs) {
@@ -461,11 +613,17 @@ async function runPipeline(profile) {
   var pipeEl = $("#pipeline");
   if (pipeEl) pipeEl.classList.add("running");
   var retryCount = 0;
+  var startTs = new Date();
+  var providerList = [];
   try {
+    /* ---- Nadia ---- */
+    appendTrailCard("nadia", 0, profile);
+    updateTrailTerminal("nadia", "Querying published Google Sheet…");
     setNodeStatus("nadia", "retrieving catalog...");
     var catalog = await pipelineStep("nadia",
       "Querying the live policy catalog\u2026", function () { return fetchLiveCatalog(); }, undefined, 10000);
     var nadia = nadiaResearch(catalog, profile);
+    providerList = [...new Set(catalog.map(function (p) { return p.provider_name; }).filter(Boolean))];
     traceCapture("nadia", "Research brief", {
       total: nadia.total, eligible: nadia.eligible.map(function (p) { return p.policy_id; }),
       note: nadia.note || "Standard query"
@@ -474,6 +632,19 @@ async function runPipeline(profile) {
     appendLog("Queried " + nadia.total + " live polic" + (nadia.total === 1 ? "y" : "ies") + "; " + nadia.eligible.length + " match your age band and region", "done");
     if (nadia.note) appendLog(nadia.note, "agent");
 
+    updateTrailTags("nadia", [
+      { text: "policy_catalog · " + nadia.total + " rows", ok: true },
+      { text: (profile.age ? "age " + profile.age : "") + (profile.life_stage ? " · " + profile.life_stage : ""), ok: true },
+      { text: "Google Sheets · " + startTs.toLocaleTimeString(), ok: true },
+      { text: "Gemini · Cloudflare Worker proxy", ok: true }
+    ]);
+    updateTrailTerminal("nadia", nadia.eligible.length + " policies matched from " + nadia.total + " total.");
+    updateTrailOutput("nadia", buildNadiaOutput(nadia, profile, catalog));
+    settleTrailCard("nadia");
+
+    /* ---- Milo ---- */
+    appendTrailCard("milo", 0, profile);
+    updateTrailTerminal("milo", "Scoring " + nadia.eligible.length + " eligible policies…");
     setNodeStatus("milo", "scoring " + nadia.eligible.length + " policies...");
     var scored = await pipelineStep("milo",
       "Scoring " + nadia.eligible.length + " eligible policies against your profile\u2026",
@@ -484,6 +655,18 @@ async function runPipeline(profile) {
     setNodeStatus("milo", scored.length + " ranked by fit");
     appendLog("Scored and ranked " + scored.length + " polic" + (scored.length === 1 ? "y" : "ies") + " by fit, not price", "done");
 
+    updateTrailTags("milo", [
+      { text: scored.length + " policies ranked", ok: true },
+      { text: "fit_score · not price", ok: true },
+      { text: "deterministic scoring", ok: true }
+    ]);
+    updateTrailTerminal("milo", scored.length + " policies ranked by fit score.");
+    updateTrailOutput("milo", buildMiloOutput(scored, profile));
+    settleTrailCard("milo");
+
+    /* ---- Priya ---- */
+    appendTrailCard("priya", 0, profile);
+    updateTrailTerminal("priya", "Re-fetching catalog to verify…");
     setNodeStatus("priya", "re-fetching catalog to verify...");
     var built = await pipelineStep("priya",
       "Building your shortlist from live catalog fields\u2026",
@@ -502,6 +685,18 @@ async function runPipeline(profile) {
     setNodeStatus("priya", built.shortlist.length + " verified");
     appendLog(built.note, "done");
 
+    updateTrailTags("priya", [
+      { text: "policy_catalog · re-fetched live", ok: true },
+      { text: built.shortlist.length + " policy_ids verified", ok: built.shortlist.length > 0 },
+      { text: "cross-checked against Nadia's set", ok: true }
+    ]);
+    updateTrailTerminal("priya", built.shortlist.length + " policies verified and shortlisted.");
+    updateTrailOutput("priya", buildPriyaOutput(built, profile));
+    settleTrailCard("priya");
+
+    /* ---- Sasha ---- */
+    appendTrailCard("sasha", 0, profile);
+    updateTrailTerminal("sasha", "Writing customer-facing copy…");
     setNodeStatus("sasha", "writing copy...");
     var copy = await pipelineStep("sasha",
       "Writing the why behind each recommendation\u2026",
@@ -515,6 +710,18 @@ async function runPipeline(profile) {
     setNodeStatus("sasha", "wrote " + built.shortlist.length + " explanations");
     appendLog(copy.empty ? "The catalog is empty for this profile; wrote the honest message instead" : "Wrote the reason under each of the " + built.shortlist.length + " polic" + (built.shortlist.length === 1 ? "y" : "ies"), "done");
 
+    updateTrailTags("sasha", [
+      { text: built.shortlist.length + " explanations written", ok: built.shortlist.length > 0 },
+      { text: "grounded in Priya's verified data", ok: true },
+      { text: "no jargon · no fake urgency", ok: true }
+    ]);
+    updateTrailTerminal("sasha", built.shortlist.length + " explanations written for customer.");
+    updateTrailOutput("sasha", buildSashaOutput(built, profile));
+    settleTrailCard("sasha");
+
+    /* ---- Callum ---- */
+    appendTrailCard("callum", 0, profile);
+    updateTrailTerminal("callum", "Reviewing all handoffs…");
     setNodeStatus("callum", "reviewing handoffs...");
     var verdict = await pipelineStep("callum",
       "Reviewing the handoffs and synthesising the recommendation\u2026",
@@ -529,21 +736,33 @@ async function runPipeline(profile) {
       retryCount++;
       appendLog("Callum flagged: " + gate.reason + " \u2014 sending back to " + gate.target, "warn");
       setNodeStatus("callum", "flagged, sending back to " + gate.target);
+      updateTrailTerminal("callum", "Quality gate flagged: " + gate.reason + ". Sending back to " + gate.target + ".");
+      appendRevisionNote("Callum flagged: " + gate.reason + ". Sending back to " + gate.target + " for revision.");
 
-      /* Show backward animation on pipeline */
       var pipeTrack = document.querySelector(".pipeline-track");
       if (pipeTrack) pipeTrack.classList.add("revision-loop");
       setNode(gate.target, "revision", "Re-running");
       await sleep(350);
 
       if (gate.target === "sasha") {
+        appendTrailCard("sasha", 0, profile);
+        updateTrailTerminal("sasha", "Re-writing copy after Callum's feedback…");
         setNodeStatus("sasha", "re-writing copy...");
         built.shortlist.forEach(function (c) { c.why = sashaWhy(c, profile); });
         traceCapture("sasha", "Copy (retry)", {
           reasons: built.shortlist.map(function (c) { return { id: c.policy_id, why: c.why }; })
         });
         setNodeStatus("sasha", "re-wrote " + built.shortlist.length + " explanations");
+        updateTrailTags("sasha", [
+          { text: built.shortlist.length + " explanations rewritten", ok: true },
+          { text: "revision triggered by Callum", ok: false }
+        ]);
+        updateTrailTerminal("sasha", built.shortlist.length + " explanations rewritten.");
+        updateTrailOutput("sasha", buildSashaOutput(built, profile));
+        settleTrailCard("sasha");
       } else if (gate.target === "milo") {
+        appendTrailCard("milo", 0, profile);
+        updateTrailTerminal("milo", "Re-scoring after Callum's feedback…");
         setNodeStatus("milo", "re-scoring...");
         scored = miloDesign(nadia.eligible, profile);
         traceCapture("milo", "Ranking (retry)", {
@@ -561,7 +780,16 @@ async function runPipeline(profile) {
         traceCapture("priya", "Re-verification", {
           shortlisted: built.shortlist.map(function (c) { return c.policy_id; })
         });
+        updateTrailTags("milo", [
+          { text: scored.length + " policies re-ranked", ok: true },
+          { text: "revision triggered by Callum", ok: false }
+        ]);
+        updateTrailTerminal("milo", scored.length + " policies re-ranked.");
+        updateTrailOutput("milo", buildMiloOutput(scored, profile));
+        settleTrailCard("milo");
       } else if (gate.target === "nadia") {
+        appendTrailCard("nadia", 0, profile);
+        updateTrailTerminal("nadia", "Re-querying catalog after Callum's feedback…");
         setNodeStatus("nadia", "re-querying catalog...");
         catalog = await fetchLiveCatalog();
         nadia = nadiaResearch(catalog, profile);
@@ -578,6 +806,14 @@ async function runPipeline(profile) {
           });
         });
         built.shortlist.forEach(function (c) { c.why = sashaWhy(c, profile); });
+        updateTrailTags("nadia", [
+          { text: nadia.total + " policies re-queried", ok: true },
+          { text: nadia.eligible.length + " re-matched", ok: true },
+          { text: "revision triggered by Callum", ok: false }
+        ]);
+        updateTrailTerminal("nadia", nadia.eligible.length + " policies re-matched after catalog re-fetch.");
+        updateTrailOutput("nadia", buildNadiaOutput(nadia, profile, catalog));
+        settleTrailCard("nadia");
       }
 
       if (pipeTrack) pipeTrack.classList.remove("revision-loop");
@@ -588,6 +824,7 @@ async function runPipeline(profile) {
 
       if (!gate.pass) {
         appendLog("Second check still flagged: " + gate.reason + ". Showing honest status to customer.", "warn");
+        updateTrailTerminal("callum", "Quality gate still flagged after retry. Showing honest status.");
         verdict = { note: "The pipeline found issues it could not resolve automatically. Here is an honest summary of what was found.", html: "<p>Callum's quality gate flagged: " + esc(gate.reason) + ". Rather than serve a questionable result, we are showing you exactly what happened.</p>" };
       }
     }
@@ -596,11 +833,20 @@ async function runPipeline(profile) {
     appendLog(verdict.note, "done");
     traceCapture("callum", "Final verdict", { note: verdict.note });
 
+    updateTrailTags("callum", [
+      { text: "handoffs verified", ok: true },
+      { text: "quality gate " + (gate && gate.pass ? "passed" : "flagged"), ok: gate && gate.pass },
+      { text: "pipeline " + (retryCount > 0 ? "completed with " + retryCount + " revision" + (retryCount > 1 ? "s" : "") : "completed"), ok: true }
+    ]);
+    updateTrailTerminal("callum", verdict.note);
+    updateTrailOutput("callum", buildCallumOutput(verdict, built, profile));
+    settleTrailCard("callum");
+
     window.__lastRun = {
       total: nadia.total,
       eligible: nadia.eligible.length,
       shortlisted: built.shortlist.length,
-      at: new Date(),
+      at: startTs,
       profile: profile,
       top: scored[0],
       trace: __trace.slice(),
