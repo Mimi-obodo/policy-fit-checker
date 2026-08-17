@@ -1,23 +1,53 @@
 /* ==========================================================================
    Policy Fit Checker: five-agent pipeline, driven entirely by live data.
-   Architecture: Option A. The Researcher's data query (Google Sheets fetch)
-   is genuinely live and happens in the browser at the moment of use. The
-   other four agents are deterministic, persona-grounded logic over that
-   live-fetched data. No policy value is hardcoded anywhere in this file.
+   The Researcher's data query (Google Sheets CSV fetch) is genuinely live
+   and happens in the browser at the moment of use. The other four agents
+   are deterministic, persona-grounded logic over that live-fetched data,
+   and Priya independently re-queries the catalog before rendering. With a
+   Cloudflare Worker configured (config.js), chat replies come from a live
+   LLM grounded in a per-request catalog fetch. No policy value is
+   hardcoded anywhere in this file.
    ========================================================================== */
 
 "use strict";
 
 /* --------------------------------------------------------------------------
-   Live data source (the only piece of "data" in this file: a URL, not data)
+   Live data source. The only "data" in this file is a URL, never policy
+   values. Every catalog read goes through fetchLiveCatalog() below, which
+   hits a live Google Sheets CSV at the moment it is called. Nothing is
+   cached, stored, or hardcoded; a failed fetch is a visible error state.
    -------------------------------------------------------------------------- */
 var SHEET_ID = "1ZzLcYTmbQ79kY4tHG52gfPWZdgsTdOs9yLBMZrFdcS8";
 var SHEET_GID = "1610292741";
+
+/* Optional: the published, durable CSV link for this sheet's tab
+   (File > Share > Publish to web > the "1610292741" tab > CSV).
+   `https://docs.google.com/spreadsheets/d/e/<published-id>/pub?gid=1610292741&single=true&output=csv`
+   Paste it below once published. Left empty, the export endpoint is used
+   instead (also keyless and CORS-open). */
+var PUBLISHED_CSV_URL = "";
+
 function sheetCsvUrl() {
+  if (PUBLISHED_CSV_URL) {
+    return PUBLISHED_CSV_URL + (PUBLISHED_CSV_URL.indexOf("?") === -1 ? "?" : "&") + "cb=" + Date.now();
+  }
   return "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv&gid=" + SHEET_GID + "&cb=" + Date.now();
 }
 function sheetJsonpUrl() {
   return "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?gid=" + SHEET_GID + "&tqx=out:json;responseHandler:pfcCallback&cb=" + Date.now();
+}
+
+/* --------------------------------------------------------------------------
+   Liveness diagnostic. Updated on every fresh fetch so the "live" claim is
+   provable on the match page and the chat page, and in the chat widget.
+   -------------------------------------------------------------------------- */
+var __pfcDiag = { at: null, count: null, source: null };
+function noteCatalogFetch(count, at, source) {
+  __pfcDiag.count = count;
+  __pfcDiag.at = at || new Date();
+  __pfcDiag.source = source || "live";
+  var label = "Catalog fetched " + __pfcDiag.at.toLocaleTimeString() + ", " + count + " policies loaded.";
+  document.querySelectorAll("[data-catalog-diag]").forEach(function (el) { el.textContent = label; });
 }
 
 /* --------------------------------------------------------------------------
@@ -110,7 +140,9 @@ function loadViaJSONP() {
   });
 }
 
-function fetchCatalog() {
+/* Shared live catalog fetch. Every agent that touches policy data calls this,
+   at the moment of use, and it updates the on-page liveness diagnostic. */
+function fetchLiveCatalog() {
   return fetch(sheetCsvUrl())
     .then(function (res) {
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -119,9 +151,16 @@ function fetchCatalog() {
     .then(function (text) {
       var rows = parseCSV(text);
       if (rows.length < 2) throw new Error("Catalog is empty");
-      return rows.slice(1).map(function (r) { return rowToPolicy(rows[0], r); });
+      var policies = rows.slice(1).map(function (r) { return rowToPolicy(rows[0], r); });
+      noteCatalogFetch(policies.length);
+      return policies;
     })
-    .catch(function () { return loadViaJSONP(); });
+    .catch(function (err) {
+      return loadViaJSONP().then(function (policies) {
+        noteCatalogFetch(policies.length);
+        return policies;
+      });
+    });
 }
 
 /* --------------------------------------------------------------------------
@@ -216,9 +255,14 @@ function miloDesign(eligible, profile) {
 }
 
 /* --------------------------------------------------------------------------
-   Agent: Priya, Maker. Build the shortlist from live fields, guarded.
+   Agent: Priya, Maker. Build the shortlist from live fields, guarded, and
+   independently re-verify against a fresh catalog fetch (a live cross-check:
+   she re-queries the published sheet herself before rendering anything).
    -------------------------------------------------------------------------- */
-function priyaBuild(scored, profile) {
+function priyaBuild(scored, profile, liveRows, fetchTime) {
+  var liveById = {};
+  (liveRows || []).forEach(function (p) { if (p.policy_id) liveById[p.policy_id] = p; });
+
   var shortlist = scored.slice(0, 4).map(function (x) {
     var p = x.policy;
     var card = {
@@ -239,10 +283,18 @@ function priyaBuild(scored, profile) {
     };
     return card;
   });
+
+  var stale = shortlist.filter(function (c) { return liveById && !liveById[c.policy_id]; }).map(function (c) { return c.policy_id; });
+  var verified = shortlist.filter(function (c) { return !stale.length || liveById[c.policy_id]; });
+
   var note = shortlist.length === 0
     ? "Priya: no eligible policy passed the fit bar. Nothing was invented to fill the gap."
-    : "Priya: " + shortlist.length + " card" + (shortlist.length === 1 ? "" : "s") + " built from live catalog fields only.";
-  return { shortlist: shortlist, note: note };
+    : "Priya: " + shortlist.length + " card" + (shortlist.length === 1 ? "" : "s") + " built from live catalog fields only." +
+      (stale.length
+        ? " Priya re-queried the catalog independently and " + stale.length + " shortlisted polic" + (stale.length === 1 ? "y no longer resolves" : "ies no longer resolve") + " (" + stale.join(", ") + ") \u2014 surfaced honestly."
+        : " Priya re-queried the catalog independently and every shortlisted policy_id still resolves.") +
+      (fetchTime ? " Fetched live at " + fetchTime.toLocaleTimeString() + "." : "");
+  return { shortlist: shortlist, verified: verified, stale: stale, note: note };
 }
 
 /* --------------------------------------------------------------------------
@@ -357,7 +409,7 @@ async function runPipeline(profile) {
   try {
     /* Nadia: the genuinely live query happens here, at the moment of use */
     var catalog = await pipelineStep("nadia",
-      "Querying the live policy catalog\u2026", function () { return fetchCatalog(); });
+      "Querying the live policy catalog\u2026", function () { return fetchLiveCatalog(); });
     var nadia = nadiaResearch(catalog, profile);
     appendLog("Queried " + nadia.total + " live polic" + (nadia.total === 1 ? "y" : "ies") + "; " + nadia.eligible.length + " match your age band and region", "done");
     if (nadia.note) appendLog(nadia.note, "agent");
@@ -369,7 +421,14 @@ async function runPipeline(profile) {
 
     var built = await pipelineStep("priya",
       "Building your shortlist from live catalog fields\u2026",
-      function () { return Promise.resolve(priyaBuild(scored, profile)); });
+      function () {
+        /* Priya re-queries the catalog herself before rendering anything,
+           and cross-checks Milo's shortlist against her fresh fetch. */
+        return fetchLiveCatalog().then(function (liveRows) {
+          var fetchTime = new Date();
+          return priyaBuild(scored, profile, liveRows, fetchTime);
+        });
+      });
     appendLog(built.note, "done");
 
     var copy = await pipelineStep("sasha",
@@ -436,9 +495,9 @@ function renderResults(built, copy, verdict) {
     var lr = window.__lastRun;
     sum.innerHTML =
       "<b>Live run, " + lr.at.toLocaleTimeString() + ".</b> Nadia queried " + lr.total + " polic" + (lr.total === 1 ? "y" : "ies") +
-      " from the Google Drive catalog; Milo scored " + lr.eligible + " eligible against your profile; Priya built the shortlist; Callum signed it off. Nothing here is cached or hardcoded.";
+      " from the published catalog; Milo scored " + lr.eligible + " eligible against your profile; Priya re-queried independently and built the shortlist; Callum signed it off. Nothing here is cached or hardcoded.";
   } else if (sum) {
-    sum.innerHTML = "<b>Live run.</b> Queried from the Google Drive catalog at the moment you asked.";
+    sum.innerHTML = "<b>Live run.</b> Catalog fetched fresh for this match.";
   }
 
   var oldSb = res.querySelector(".score-breakdown");
@@ -826,7 +885,7 @@ var PREVIEWS = {
   "biz-allianz":    { image: "https://picsum.photos/seed/pfc-biz-allianz/560/320", title: "Allianz", subtitle: "A real insurer of business and liability lines." },
   "biz-aviva":      { image: "https://picsum.photos/seed/pfc-biz-aviva/560/320", title: "Aviva", subtitle: "A real insurer offering employers' and public liability cover." },
   "booking":        { image: "https://picsum.photos/seed/pfc-booking/560/320", title: "Booking.com", subtitle: "The booking-site pattern this catalogue borrows: everything real and on show before you choose." },
-  "live":           { image: "https://picsum.photos/seed/pfc-live/560/320", title: "Live Google Sheet", subtitle: "The shared catalog lives in Google Drive and is fetched client-side the moment this page loads." }
+  "live":           { image: "https://picsum.photos/seed/pfc-live/560/320", title: "Live published catalog", subtitle: "The shared catalog is published from a Google Sheet and fetched client-side at query time." }
 };
 
 function initPreviews() {
@@ -868,33 +927,33 @@ function initPreviews() {
 var PERSONAS = {
   nadia: {
     num: 1, name: "Nadia", role: "Researcher",
-    short: "Queries the live published catalog at the moment of use, filters it against your age band and region, and reports gaps in the data honestly.",
-    voice: "Precise, evidence-first, quietly blunt. Nadia calls thin data thin data and never pads a finding.",
-    boundary: "Nadia does not recommend. She researches, filters and reports what the catalog actually contains."
+    short: "Queries the live catalog at the moment of the request and returns only policies that genuinely fit: correct age band, life-stage tag, and budget range. Cites every claim with its exact policy_id. If nothing fits well, says so plainly and explains the gap rather than forcing a weak match.",
+    voice: "Precise, evidence-first, quietly blunt. Concrete and sourced: lead with the fact, then the implication, and keep opinion visibly separate from data.",
+    boundary: "Never invents a premium, exclusion, or coverage figure. A gap in the catalog is a finding, not a failure."
   },
   milo: {
     num: 2, name: "Milo", role: "Designer",
-    short: "Decides how candidates should be compared and scores every eligible policy on a 100-point fit model, including a fine-print scan for your health considerations.",
-    voice: "Methodical and audit-minded. Milo wants the scoring to be checkable by anyone.",
-    boundary: "Milo scores; he does not market. A low score is reported as a low score."
+    short: "Decides which two to four policies to present, in what order, and what one-line reason best explains the fit for this specific customer. Prioritises clarity over completeness: cuts anything that does not change the customer's decision.",
+    voice: "Methodical and audit-minded. Visual and structural: talk in flows, screens, and named trade-offs rather than adjectives.",
+    boundary: "Scores and ranks, does not market. A low score is reported as a low score. Never fabricates policy details."
   },
   priya: {
     num: 3, name: "Priya", role: "Maker",
-    short: "Builds the shortlist from the real fields in the live catalog: name, provider, premium, coverage. Nothing is invented; missing data is named as missing.",
-    voice: "Careful, builder's honesty. Priya would rather ship one true card than four dressed-up ones.",
-    boundary: "Priya never fabricates a field. If the catalog lacks it, the card says so."
+    short: "Re-fetches the live catalog independently and confirms each policy_id still resolves to real, current data before rendering the final result the customer sees. Never trusts a value passed to it without re-verifying it against the live source.",
+    voice: "Careful, builder's honesty. Precise and a little dry: name fields, values, and policy IDs, not vague things.",
+    boundary: "Never presents cached or hardcoded data as live. If a policy_id does not resolve, says so."
   },
   sasha: {
     num: 4, name: "Sasha", role: "Communicator",
-    short: "Writes the plain-language reason under every policy, grounded in the actual numbers and the actual exclusions.",
-    voice: "Warm, exact, no jargon. Sasha writes the fine print the way you would explain it to a friend.",
-    boundary: "Sasha explains; she does not persuade you to buy."
+    short: "Writes the surrounding customer-facing copy: the framing above the results, and, if the match is weak or empty, an honest message explaining why. Grounds every claim in the actual data rendered, not in generic marketing language.",
+    voice: "Warm, exact, no jargon. Plain, specific, customer-shaped: write the fine print the way you would explain it to a friend.",
+    boundary: "Never promises an outcome the match cannot support. No fake urgency, no manufactured scarcity, no shaming anyone for being under-insured."
   },
   callum: {
     num: 5, name: "Callum", role: "Manager",
-    short: "Reviews every handoff, keeps the honest empty state visible when nothing fits, and synthesises the final recommendation.",
-    voice: "Calm, decisive, responsible for the whole line. Callum signs the final answer.",
-    boundary: "Callum never forces a match. If the catalog has nothing good, you hear that clearly."
+    short: "Reviews the outputs from all four agents in sequence, confirms each handoff is coherent with the one before it, and flags any mismatch before it reaches the customer. Produces a short executive summary of the run.",
+    voice: "Calm, decisive, responsible for the whole line. Speak in handoffs, gates, and decisions rather than vague encouragement.",
+    boundary: "Never forces a match. If the catalog has nothing good, says so clearly. Does not do the specialists' work in their place."
   }
 };
 
@@ -961,6 +1020,50 @@ function chatAddLine(cls, html) {
 }
 
 var chatTyping = false;
+
+/* The optional live-LLM path: POST to the Cloudflare Worker proxy, which
+   re-fetches the published catalog server-side per request, grounds the
+   reply in those rows, and routes to the right agent. History is sent so
+   follow-ups keep context; the reply is always grounded in a fresh fetch. */
+function llmAnswer(q) {
+  var cfg = (window.PFC_CONFIG || {}).WORKER_URL || "";
+  if (!cfg) return Promise.reject(new Error("no worker configured"));
+  var hist = window.__pfcHistory || [];
+  var body = JSON.stringify({ message: q, history: hist.slice(-8) });
+  return fetch(cfg, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: body
+  }).then(function (res) {
+    return res.json().catch(function () { throw new Error("worker returned non-JSON"); });
+  }).then(function (data) {
+    if (!data || data.error) throw new Error((data && data.error) || "worker error");
+    hist.push({ role: "user", content: q }, { role: "assistant", content: data.reply });
+    window.__pfcHistory = hist;
+    if (data.total != null && data.fetchedAt) noteCatalogFetch(data.total, new Date(data.fetchedAt), "worker");
+    return data;
+  });
+}
+
+function agentName(k) {
+  return ({ nadia: "Nadia", milo: "Milo", priya: "Priya", sasha: "Sasha", callum: "Callum" })[k] || "Callum";
+}
+
+/* Single answer path shared by the chat page and the widget.
+   Worker configured -> live-LLM reply. Not configured -> the deterministic
+   live-pipeline reply (policy questions re-query the catalog fresh). On
+   failure we surface an honest error; we never silently fall back. */
+function answerInChat(q) {
+  var cfg = (window.PFC_CONFIG || {}).WORKER_URL || "";
+  if (cfg) {
+    return llmAnswer(q).then(function (d) {
+      setNode(d.agent, "done", "Done");
+      return { html: whoTag(agentName(d.agent)) + d.reply };
+    });
+  }
+  return botAnswer(q).then(function (html) { return { html: html }; });
+}
+
 function chatSend(q) {
   if (chatTyping) return;
   chatAddLine("user", esc(q));
@@ -971,13 +1074,13 @@ function chatSend(q) {
   var log = $("#chatLog");
   log.appendChild(typing);
   log.scrollTop = log.scrollHeight;
-  botAnswer(q).then(function (reply) {
+  answerInChat(q).then(function (r) {
     typing.remove();
-    chatAddLine("bot", reply);
+    chatAddLine("bot", r.html);
     chatTyping = false;
-  }).catch(function () {
+  }).catch(function (err) {
     typing.remove();
-    chatAddLine("bot", whoTag("Callum") + " Something interrupted the live query. I will not invent an answer; try again in a moment.");
+    chatAddLine("bot", whoTag("Callum") + " The live model could not be reached (" + err.message + "). I will not invent an answer; try again in a moment.");
     chatTyping = false;
   });
 }
@@ -988,10 +1091,10 @@ async function botMatchAnswer(profile) {
 
   ["nadia", "milo", "priya", "sasha", "callum"].forEach(function (k) { setNode(k, null, "Idle"); });
   if (live) live.classList.add("working");
-  say("Nadia is querying the live Google Drive catalog\u2026");
+  say("Nadia is querying the live published catalog\u2026");
   setNode("nadia", "active", "Querying");
 
-  var catalog = await fetchCatalog();
+  var catalog = await fetchLiveCatalog();
   setNode("nadia", "done", "Done");
   var nadia = nadiaResearch(catalog, profile);
 
@@ -1095,6 +1198,14 @@ function initChat() {
     var q = decodeURIComponent(m[1].replace(/\+/g, " "));
     if (q) chatSend(q);
   }
+  /* Warm the liveness diagnostic on load; every question after this also
+     advances it (worker replies carry a fresh fetch; policy questions in
+     the deterministic path call fetchLiveCatalog again). */
+  fetchLiveCatalog().catch(function () {
+    document.querySelectorAll("[data-catalog-diag]").forEach(function (el) {
+      el.textContent = "Catalog not reached yet \u2014 the live sheet did not respond.";
+    });
+  });
 }
 
 /* --------------------------------------------------------------------------
@@ -1201,13 +1312,13 @@ function initChatbot() {
     typing.textContent = "The team is thinking\u2026";
     log.appendChild(typing);
     log.scrollTop = log.scrollHeight;
-    botAnswer(q).then(function (reply) {
+    answerInChat(q).then(function (r) {
       typing.remove();
-      addLine("bot", reply);
+      addLine("bot", r.html);
       busy = false;
-    }).catch(function () {
+    }).catch(function (err) {
       typing.remove();
-      addLine("bot", whoTag("Callum") + " Something interrupted the live query. I will not invent an answer; try again in a moment.");
+      addLine("bot", whoTag("Callum") + " The live model could not be reached (" + err.message + "). I will not invent an answer; try again in a moment.");
       busy = false;
     });
   }
@@ -1605,7 +1716,7 @@ function initProviders() {
     });
   }
 
-  fetchCatalog().then(function (catalog) {
+  fetchLiveCatalog().then(function (catalog) {
     all = catalog;
     var types = [];
     var regions = [];
@@ -1618,7 +1729,7 @@ function initProviders() {
     fillSelect(regionSel, regions);
     render();
   }).catch(function () {
-    grid.innerHTML = '<div class="empty-state"><h3>Live catalog unreachable</h3><p>This page never fakes a catalogue. The Google Drive sheet could not be reached; try again in a moment.</p></div>';
+    grid.innerHTML = '<div class="empty-state"><h3>Live catalog unreachable</h3><p>This page never fakes a catalogue. The published sheet could not be reached; try again in a moment.</p></div>';
     if (count) count.textContent = "offline";
   });
 

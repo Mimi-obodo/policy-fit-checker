@@ -1,0 +1,13 @@
+# Environment secrets (API keys)
+.dev.vars
+
+# Cloudflare Workers
+.wrangler/
+.workerd/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

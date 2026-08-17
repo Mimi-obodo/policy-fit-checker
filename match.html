@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Find your fit | Policy Fit Checker</title>
-<meta name="description" content="Tell the five agents about your life and watch the live pipeline query the Google Drive catalog and return an explained shortlist.">
+<meta name="description" content="Tell the five agents about your life and watch the live pipeline query the published catalog and return an explained shortlist.">
 <meta name="theme-color" content="#0B0B0A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,7 +35,7 @@
           <button type="button" class="btn btn-ghost" id="stepBack" hidden>Back</button>
           <button type="button" class="btn btn-primary" id="stepNext">Continue</button>
         </div>
-        <p class="intake-privacy">We never see your answers. They are used only in your browser, for this match, and never stored or sent anywhere except to query the public catalog.</p>
+        <p class="intake-privacy">We never see your answers. They are used only in your browser, for this match. Your profile queries the published catalog; it is never sent to any model or stored anywhere.</p>
       </div>
     </form>
   </section>
@@ -72,6 +72,7 @@
     <div class="pipeline-log" id="pipelineLog" aria-live="polite">
       <p class="log-placeholder">The line is quiet. Answer the six questions above and the line comes alive with a live query of the published catalog.</p>
     </div>
+    <p class="catalog-diag" data-catalog-diag>Catalog not fetched yet.</p>
   </section>
 
   <!-- ================= RESULTS ================= -->
@@ -89,6 +90,7 @@
 </main>
 
 <script src="shell.js"></script>
+<script src="config.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

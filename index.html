@@ -1,70 +1,237 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Policy Fit Checker: insured or unsure?</title>
-<meta name="description" content="Are you insured or unsure? Let's help you pick a bespoke insurance plan.">
-<meta name="theme-color" content="#0B0B0A">
+<title>Policy Fit Checker — insurance matched to your life</title>
+<meta name="description" content="Are you insured or unsure? Five specialised agents read the live policy catalog and hand you back a short, explained shortlist that actually fits your life.">
+<meta name="theme-color" content="#0D1117">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&amp;family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="premium.css">
 </head>
 <body>
 
+<!-- ================= HEADER ================= -->
+<header class="site-header" id="siteHeader">
+  <a class="brand" href="index.html" aria-label="Policy Fit Checker — home">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span>Policy&nbsp;Fit&nbsp;Checker</span>
+  </a>
+
+  <div class="header-actions">
+    <a class="header-link" href="about.html">About</a>
+    <a class="header-link" href="#agents">Agents</a>
+    <a class="header-link" href="providers.html">Catalog</a>
+    <a class="header-link" href="#contact">Contact</a>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle colour theme">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.2 14.6A8.4 8.4 0 0 1 9.4 3.8a8.4 8.4 0 1 0 10.8 10.8Z"/></svg>
+    </button>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false">
+      <span class="dots-row"><span class="dot"></span><span class="dot"></span></span>
+      <span class="dots-row"><span class="dot"></span><span class="dot"></span></span>
+    </button>
+  </div>
+</header>
+
+<!-- ================= FULLSCREEN MENU ================= -->
+<div class="menu-overlay" id="menuOverlay" aria-hidden="true">
+  <nav aria-label="Primary">
+    <a class="menu-link" href="index.html">
+      <span class="num">01</span><span class="label">Home</span><span class="sub">Are you insured?</span>
+    </a>
+    <a class="menu-link" href="about.html">
+      <span class="num">02</span><span class="label">About us</span><span class="sub">The firm</span>
+    </a>
+    <a class="menu-link" href="#agents">
+      <span class="num">03</span><span class="label">The agents</span><span class="sub">Five specialists</span>
+    </a>
+    <a class="menu-link" href="providers.html">
+      <span class="num">04</span><span class="label">Our products</span><span class="sub">Live catalog</span>
+    </a>
+    <a class="menu-link" href="chat.html">
+      <span class="num">05</span><span class="label">Customer service</span><span class="sub">Chat with the team</span>
+    </a>
+    <a class="menu-link" href="education.html">
+      <span class="num">06</span><span class="label">News &amp; blog</span><span class="sub">Insights</span>
+    </a>
+  </nav>
+  <div class="menu-foot">
+    <a href="how.html">How it works</a>
+    <a href="match.html">Find your fit</a>
+    <a href="cover.html">Cover list</a>
+    <a href="mobile.html">Mobile app</a>
+    <a href="principles.html">Principles</a>
+    <a href="chat.html">Contact</a>
+  </div>
+</div>
+
 <main>
 
-  <!-- ================= HERO: are you insured? ================= -->
-  <section class="hero quote-hero" aria-labelledby="hero-title">
-    <div class="hero-bg" aria-hidden="true"></div>
+  <!-- ================= CINEMATIC FULL-SCREEN HERO ================= -->
+  <section class="hero" aria-labelledby="hero-title">
+    <canvas id="heroCanvas" aria-hidden="true"></canvas>
+    <div class="hero-vignette" aria-hidden="true"></div>
+    <div class="hero-grain" aria-hidden="true"></div>
 
-    <h1 class="hero-title hero-anim" id="hero-title">Are you insured or unsure?</h1>
-    <p class="hero-lede hero-sub hero-anim">Let&rsquo;s help you pick a bespoke insurance plan.</p>
+    <div class="hero-content">
+      <p class="hero-kicker">Pipeline &middot; Five agents &middot; Live catalog</p>
+      <h1 class="hero-title" id="hero-title">
+        Are you insured<br>or <em>unsure?</em>
+      </h1>
+      <p class="hero-sub">Let&rsquo;s help you pick a bespoke insurance plan. Describe your life once &mdash; our five agents read the live policy catalog and hand you back a short, explained shortlist.</p>
 
-    <div class="hero-actions hero-anim">
-      <a class="btn btn-primary btn-pulse" href="chat.html">Talk To An Agent</a>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="chat.html">Talk to an agent <span class="arrow" aria-hidden="true">&rarr;</span></a>
+        <a class="btn btn-ghost" href="#agents">Explore the firm <span class="arrow" aria-hidden="true">&darr;</span></a>
+      </div>
+    </div>
+
+    <a class="scroll-cue" href="#intro" id="scrollCue">
+      <span>Scroll down to discover</span>
+      <span class="line" aria-hidden="true"></span>
+    </a>
+  </section>
+
+  <!-- ================= INTRO ================= -->
+  <section class="section" id="intro" aria-label="The firm in brief">
+    <div class="container intro-grid">
+      <div class="reveal">
+        <p class="kicker">The firm</p>
+        <h2 class="section-title">Insurance matched to your <em>life</em>, not sorted by price.</h2>
+        <p class="section-lede">Describe yourself once. Nadia, Milo, Priya, Sasha and Callum hand your profile down the line, query the live policy catalog at the moment you ask, and hand you back two to four policies with a plain reason why each one fits.</p>
+      </div>
+
+      <div class="reveal reveal-1">
+        <p class="intro-note">&ldquo;Every policy you see is pulled live from the published catalog at the moment of your request. Nothing is stored, invented or hardcoded on this site.&rdquo;</p>
+        <div class="intro-stat"><b>60+</b><span>policies in the live catalog</span></div>
+        <div class="intro-stat"><b>5</b><span>agents on the line</span></div>
+        <div class="intro-stat"><b>2&ndash;4</b><span>explained picks, not a list</span></div>
+      </div>
     </div>
   </section>
 
   <!-- ================= WHAT THE AGENTS DO ================= -->
-  <section class="how wrap-section" id="agents" aria-labelledby="agents-heading">
-    <p class="page-kicker">( 01 · the agents )</p>
-    <h2 class="section-title" id="agents-heading">What the agents do</h2>
-    <p class="section-lede">Five specialised agents work the live policy catalog for you. Describe your life once and they hand your profile down the line, then hand you back two to four policies with a plain reason why each one fits.</p>
+  <section class="section" id="agents" aria-labelledby="agents-heading">
+    <div class="container">
+      <div class="section-head center reveal">
+        <p class="kicker">The team</p>
+        <h2 class="section-title" id="agents-heading">What the <em>agents</em> do</h2>
+        <p class="section-lede">Five specialised agents work the live policy catalog for you. Describe your life once and they hand your profile down the line, then hand you back two to four policies with a plain reason why each one fits.</p>
+      </div>
 
-    <ol class="agents-list">
-      <li data-persona="nadia" tabindex="0" role="button" aria-label="Meet Nadia, the Researcher">
-        <h3>Nadia <span>Researcher</span></h3>
-        <p>Queries the live policy catalog at the moment you ask, filters it against your age band and life stage, and names the gaps honestly.</p>
-      </li>
-      <li data-persona="milo" tabindex="0" role="button" aria-label="Meet Milo, the Designer">
-        <h3>Milo <span>Designer</span></h3>
-        <p>Decides how the candidates should be compared, and scores every eligible policy against what actually matters for your profile.</p>
-      </li>
-      <li data-persona="priya" tabindex="0" role="button" aria-label="Meet Priya, the Maker">
-        <h3>Priya <span>Maker</span></h3>
-        <p>Builds your shortlist from the real catalog fields: name, provider, premium, coverage. Nothing is invented; if the data is missing, she says so.</p>
-      </li>
-      <li data-persona="sasha" tabindex="0" role="button" aria-label="Meet Sasha, the Communicator">
-        <h3>Sasha <span>Communicator</span></h3>
-        <p>Writes the one-line reason under each policy in plain language, grounded in the actual numbers and the actual fine print.</p>
-      </li>
-      <li data-persona="callum" tabindex="0" role="button" aria-label="Meet Callum, the Manager">
-        <h3>Callum <span>Manager</span></h3>
-        <p>Reviews the handoffs, keeps the honest empty state visible when the catalog has nothing good, and synthesises the final recommendation.</p>
-      </li>
-    </ol>
+      <ol class="agents-list">
+        <li class="agent-card reveal" data-persona="nadia">
+          <span class="num">01</span>
+          <h3>Nadia <span>Researcher</span></h3>
+          <p>Queries the live policy catalog at the moment you ask, filters it against your age band and life stage, and names the gaps honestly.</p>
+          <span class="more">Meet Nadia <span aria-hidden="true">&rarr;</span></span>
+        </li>
+        <li class="agent-card reveal reveal-1" data-persona="milo">
+          <span class="num">02</span>
+          <h3>Milo <span>Designer</span></h3>
+          <p>Decides how the candidates should be compared, and scores every eligible policy against what actually matters for your profile.</p>
+          <span class="more">Meet Milo <span aria-hidden="true">&rarr;</span></span>
+        </li>
+        <li class="agent-card reveal" data-persona="priya">
+          <span class="num">03</span>
+          <h3>Priya <span>Maker</span></h3>
+          <p>Builds your shortlist from the real catalog fields: name, provider, premium, coverage. Nothing is invented; if the data is missing, she says so.</p>
+          <span class="more">Meet Priya <span aria-hidden="true">&rarr;</span></span>
+        </li>
+        <li class="agent-card reveal reveal-1" data-persona="sasha">
+          <span class="num">04</span>
+          <h3>Sasha <span>Communicator</span></h3>
+          <p>Writes the one-line reason under each policy in plain language, grounded in the actual numbers and the actual fine print.</p>
+          <span class="more">Meet Sasha <span aria-hidden="true">&rarr;</span></span>
+        </li>
+        <li class="agent-card reveal" data-persona="callum">
+          <span class="num">05</span>
+          <h3>Callum <span>Manager</span></h3>
+          <p>Reviews the handoffs, keeps the honest empty state visible when the catalog has nothing good, and synthesises the final recommendation.</p>
+          <span class="more">Meet Callum <span aria-hidden="true">&rarr;</span></span>
+        </li>
+        <li class="agent-card reveal reveal-1" data-hover="true">
+          <span class="num">&mdash;</span>
+          <h3>Your turn <span>Speak with the team</span></h3>
+          <p>No forms, no waiting rooms. Start a conversation and the pipeline hands your profile down the line in real time.</p>
+          <span class="more"><a href="chat.html">Chat with the team <span aria-hidden="true">&rarr;</span></a></span>
+        </li>
+      </ol>
+    </div>
+  </section>
 
-    <div class="page-cta">
-      <a class="btn btn-primary" href="match.html">Find your fit</a>
-      <a class="btn btn-ghost" href="chat.html">Chat with the team</a>
+  <!-- ================= STATS BAND ================= -->
+  <section class="section stats-band" aria-label="Key figures">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat reveal"><b>60+</b><span class="stat-line" aria-hidden="true"></span><span>Policies in the live catalog</span></div>
+        <div class="stat reveal reveal-1"><b>5</b><span class="stat-line" aria-hidden="true"></span><span>Agents on the line</span></div>
+        <div class="stat reveal reveal-2"><b>Live</b><span class="stat-line" aria-hidden="true"></span><span>Data fetched at ask time</span></div>
+        <div class="stat reveal"><b>2&ndash;4</b><span class="stat-line" aria-hidden="true"></span><span>Explained picks, not a list</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CTA ================= -->
+  <section class="section cta-section" id="contact" aria-labelledby="cta-title">
+    <div class="container reveal">
+      <p class="kicker">Begin</p>
+      <h2 class="cta-title" id="cta-title">Are you insured<br>or <em>unsure?</em></h2>
+      <p class="cta-sub">Let&rsquo;s help you pick a bespoke insurance plan &mdash; or find your fit from the catalog yourself.</p>
+      <div class="cta-actions">
+        <a class="btn btn-primary" href="chat.html">Talk to an agent <span class="arrow" aria-hidden="true">&rarr;</span></a>
+        <a class="btn btn-ghost-dark" href="match.html">Find your fit</a>
+      </div>
     </div>
   </section>
 
 </main>
 
-<script src="shell.js"></script>
-<script src="app.js"></script>
+<!-- ================= FOOTER ================= -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="index.html">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>Policy&nbsp;Fit&nbsp;Checker</span>
+        </a>
+        <p>Insurance matched to your life, not sorted by price. Five agents, one live catalog, two to four explained picks.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Firm</h4>
+        <a href="about.html">About us</a>
+        <a href="#agents">The agents</a>
+        <a href="how.html">How it works</a>
+        <a href="principles.html">Principles</a>
+      </div>
+      <div class="footer-col">
+        <h4>Explore</h4>
+        <a href="providers.html">Our products</a>
+        <a href="cover.html">Cover list</a>
+        <a href="match.html">Find your fit</a>
+        <a href="mobile.html">Mobile app</a>
+      </div>
+      <div class="footer-col">
+        <h4>Connect</h4>
+        <a href="chat.html">Customer service</a>
+        <a href="education.html">News &amp; blog</a>
+        <a href="chat.html">Contact us</a>
+      </div>
+    </div>
+    <div class="footer-legal">
+      <span>&copy; 2026 Policy Fit Checker &middot; Academic project &mdash; educational purposes only, not financial advice.</span>
+      <div class="right">
+        <a href="principles.html">Principles</a>
+        <a href="about.html">About</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="premium.js"></script>
 </body>
 </html>

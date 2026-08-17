@@ -282,6 +282,14 @@ button.node { cursor: pointer; text-align: center; }
 .pipeline-log .log-line .who { color: var(--parchment); font-weight: 500; }
 .log-placeholder { margin: 0; color: var(--slate); }
 
+/* Liveness diagnostic: provable "live" indicator on the match and chat pages */
+.catalog-diag {
+  margin: -20px auto 34px; max-width: 640px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--ok);
+  text-align: center;
+}
+.chat-live + .catalog-diag { margin: 4px 0 10px; text-align: left; max-width: none; }
+
 /* Hero actions */
 .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
 .hero-note { max-width: 60ch; margin: 26px auto 0; font-size: 13px; color: var(--slate); }

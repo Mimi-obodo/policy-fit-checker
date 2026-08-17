@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Insurance Policy Providers | Policy Fit Checker</title>
-<meta name="description" content="The live insurance provider catalog rendered like a travel booking site: price, cover, excess and rating for every policy, pulled from Google Drive at load time.">
+<meta name="description" content="The live insurance provider catalog rendered like a travel booking site: price, cover, excess and rating for every policy, pulled from the published sheet at load time.">
 <meta name="theme-color" content="#0B0B0A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +19,7 @@
   <section class="providers wrap-section" id="providers" aria-labelledby="providers-heading">
     <p class="page-kicker">( 04 · providers )</p>
     <h2 class="section-title reveal" id="providers-heading">Insurance Policy Providers</h2>
-    <p class="section-lede reveal">The catalogue, rendered the way a travel booking site renders a city's rooms: every real provider and policy in the shared catalog, with the price, the cover, the excess and the rating all on show before you pick anything. Like <span class="pv" data-preview="booking">booking.com shows you what is actually available</span>, this list is pulled <span class="pv" data-preview="live">live from the Google Sheet</span> the moment the page loads. Nothing here is invented.</p>
+    <p class="section-lede reveal">The catalogue, rendered the way a travel booking site renders a city's rooms: every real provider and policy in the shared catalog, with the price, the cover, the excess and the rating all on show before you pick anything. Like <span class="pv" data-preview="booking">booking.com shows you what is actually available</span>, this list is pulled <span class="pv" data-preview="live">live from the published sheet</span> the moment the page loads. Nothing here is invented.</p>
 
     <div class="providers-toolbar reveal">
       <label class="prov-select"><span class="prov-label">Cover type</span>
@@ -40,7 +40,7 @@
     </div>
 
     <div class="providers-grid" id="providersGrid" aria-live="polite">
-      <p class="prov-loading">Pulling the live catalog from Google Drive&hellip;</p>
+      <p class="prov-loading">Pulling the live catalog from the published sheet&hellip;</p>
     </div>
 
     <p class="prov-footnote reveal">Prices, cover, excess, rating and exclusions are the fields published in the shared catalog and are shown exactly as provided. Sample review counts are illustrative, generated from the published rating.</p>
@@ -53,6 +53,7 @@
 </main>
 
 <script src="shell.js"></script>
+<script src="config.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

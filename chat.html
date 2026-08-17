@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chat with the team | Policy Fit Checker</title>
-<meta name="description" content="Chat with the five Policy Fit Checker agents: Nadia, Milo, Priya, Sasha and Callum. Policy questions go through the same live pipeline against the Google Drive catalog.">
+<meta name="description" content="Chat with the five Policy Fit Checker agents: Nadia, Milo, Priya, Sasha and Callum. Policy questions run against the live published catalog, fetched fresh every time.">
 <meta name="theme-color" content="#0B0B0A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +19,7 @@
   <section class="chat-section wrap-section" id="chat" aria-labelledby="chat-heading">
     <p class="page-kicker">( 06 · chat )</p>
     <h2 class="section-title reveal" id="chat-heading">Talk to the team</h2>
-    <p class="section-lede reveal">Address one agent by name, or ask the team. Questions about which policy fits go through the same live matching pipeline you used on the match page; the team queries the Google Drive catalog at the moment you ask, every time.</p>
+    <p class="section-lede reveal">Address one agent by name, or ask the team. Questions about which policy fits run the same live matching pipeline as the match page, against the published catalog fetched fresh for every question.</p>
 
     <div class="chat-pipeline reveal" id="chatPipeline" role="group" aria-label="The five agents, connected to the live catalog">
       <button type="button" class="node" data-node="nadia" data-persona="nadia" aria-label="Meet Nadia, the Researcher">
@@ -45,6 +45,7 @@
     </div>
 
     <div class="chat-live" id="chatLive" aria-live="polite">The team is idle. Ask something and the agents will query the live catalog.</div>
+    <p class="catalog-diag" data-catalog-diag>Catalog not fetched yet.</p>
 
     <div class="chat-shell reveal">
       <div class="chat-log" id="chatLog" aria-live="polite" tabindex="0">
@@ -61,7 +62,7 @@
         <input id="chatInput" type="text" placeholder="Ask the team…" autocomplete="off">
         <button type="submit" class="btn btn-primary" id="chatSend">Send</button>
       </form>
-      <p class="chat-mode">The team is connected to the live catalog: every policy question re-queries the Google Drive sheet at the moment you send it. No messages leave this page.</p>
+      <p class="chat-mode">The live catalog is re-queried for every question. If the live-LLM worker is configured (see README), your message is sent to a Cloudflare Worker that grounds the reply in the freshly fetched catalog rows before returning it; the worker holds the model key, and this site stores no conversation.</p>
     </div>
 
     <div class="page-cta reveal">
@@ -72,6 +73,7 @@
 </main>
 
 <script src="shell.js"></script>
+<script src="config.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -1,0 +1,9 @@
+name = "pfc-agent-proxy"
+main = "worker.mjs"
+compatibility_date = "2025-01-01"
+
+# Local dev secrets live in ../.dev.vars (gitignored)
+# Production secrets: wrangler secret put GEMINI_API_KEY
+
+[vars]
+GEMINI_MODEL = "gemini-3.6-flash"
